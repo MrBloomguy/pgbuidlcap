@@ -371,3 +371,52 @@ html, body {
   overflow-x: hidden;
   max-width: 100%;
 }
+
+/* Domain Page Styles */
+.domain-hero-gradient {
+  background: linear-gradient(180deg, rgba(141, 204, 117, 0.05) 0%, rgba(141, 204, 117, 0) 100%);
+}
+
+.domain-search-input {
+  background: transparent !important;
+  border: none !important;
+}
+
+.domain-search-input:focus {
+  box-shadow: none !important;
+}
+
+/* Profile Page Styles */
+.profile-tabs [role="tab"] {
+  position: relative;
+  font-weight: 500;
+}
+
+.profile-tabs [role="tab"][aria-selected="true"] {
+  color: var(--primary);
+}
+
+.profile-tabs [role="tab"][aria-selected="true"]:after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary);
+  border-radius: 4px 4px 0 0;
+}
+
+.profile-cover-gradient {
+  background: linear-gradient(135deg, rgba(141, 204, 117, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+}

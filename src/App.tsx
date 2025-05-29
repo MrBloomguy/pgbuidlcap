@@ -32,10 +32,11 @@ export default function App() {
 
   return (
     <div className={theme === "dark" ? "dark" : "light"}>
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen h-screen bg-background text-foreground flex flex-col">
+        {/* Fixed Header */}
         <Navbar 
           maxWidth="full" 
-          className="border-b border-divider compact-nav h-12"
+          className="border-b border-divider compact-nav h-12 bg-background/70 backdrop-blur-md"
           isBordered
         >
           <NavbarBrand>
@@ -57,7 +58,7 @@ export default function App() {
                 placeholder="Search tokens, pairs, or addresses..."
                 size="md"
                 radius="full"
-                startContent={<Icon icon="lucide:search" className="text-default-400" size={18} />}
+                startContent={<Icon icon="lucide:search" className="text-default-400" width={18} height={18} />}
                 endContent={
                   <div className="flex items-center gap-1">
                     <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-semibold text-default-500 bg-default-200 rounded">
@@ -78,7 +79,7 @@ export default function App() {
               <Button 
                 color="secondary" 
                 variant="flat" 
-                startContent={<Icon icon="lucide:download" />}
+                startContent={<Icon icon="lucide:download" width={16} height={16} />}
                 size="sm"
                 className="compact-button"
               >
@@ -95,7 +96,7 @@ export default function App() {
               >
                 {isWalletConnected ? (
                   <>
-                    <Icon icon="lucide:check-circle" className="mr-1" size={14} />
+                    <Icon icon="lucide:check-circle" className="mr-1" width={14} height={14} />
                     <span className="truncate max-w-[80px]">0x1a2b...3c4d</span>
                   </>
                 ) : (
@@ -111,7 +112,7 @@ export default function App() {
                 aria-label="Connect Wallet"
                 onPress={handleConnectWallet}
               >
-                <Icon icon={isWalletConnected ? "lucide:check-circle" : "lucide:wallet"} />
+                <Icon icon={isWalletConnected ? "lucide:check-circle" : "lucide:wallet"} width={14} height={14} />
               </Button>
             </NavbarItem>
             <NavbarItem className="md:hidden">
@@ -122,20 +123,26 @@ export default function App() {
                 size="sm"
                 aria-label="Menu"
               >
-                <Icon icon="lucide:menu" className="text-sm" />
+                <Icon icon="lucide:menu" width={14} height={14} />
               </Button>
             </NavbarItem>
           </NavbarContent>
         </Navbar>
 
-        <div className="flex">
+        {/* Main Content Area with Fixed Sidebar */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Fixed Sidebar */}
           {!isMobile && <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />}
           
-          <main className="flex-1 p-2">
-            <Routes isWalletConnected={isWalletConnected} />
+          {/* Scrollable Content */}
+          <main className="flex-1 overflow-y-auto">
+            <div className="p-4 min-h-full">
+              <Routes isWalletConnected={isWalletConnected} />
+            </div>
           </main>
         </div>
         
+        {/* Mobile Navigation */}
         {isMobile && <MobileNavigation />}
       </div>
     </div>

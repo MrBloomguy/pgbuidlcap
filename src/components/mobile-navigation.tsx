@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 export const MobileNavigation = () => {
@@ -7,77 +6,40 @@ export const MobileNavigation = () => {
   
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    
-    // Dispatch a custom event that Routes component will listen to
-    const event = new CustomEvent('mobileNavChange', { 
-      detail: { tab } 
-    });
+    const event = new CustomEvent('mobileNavChange', { detail: { tab } });
     window.dispatchEvent(event);
   };
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-content1 border-t border-divider py-1 px-2 md:hidden">
-      <div className="flex items-center justify-around">
-        <Button
-          isIconOnly
-          variant="light"
-          aria-label="Home"
-          className="flex flex-col items-center"
-          size="sm"
-          onPress={() => handleTabChange("home")}
-        >
-          <Icon icon="lucide:home" className={`text-sm ${activeTab === 'home' ? 'text-primary' : ''}`} />
-          <span className={`text-[10px] mt-1 ${activeTab === 'home' ? 'text-primary' : ''}`}>Home</span>
-        </Button>
-        
-        <Button
-          isIconOnly
-          variant="light"
-          aria-label="Explore"
-          className="flex flex-col items-center"
-          size="sm"
-          onPress={() => handleTabChange("explore")}
-        >
-          <Icon icon="lucide:compass" className={`text-sm ${activeTab === 'explore' ? 'text-primary' : ''}`} />
-          <span className={`text-[10px] mt-1 ${activeTab === 'explore' ? 'text-primary' : ''}`}>Explore</span>
-        </Button>
-        
-        <Button
-          isIconOnly
-          variant="light"
-          aria-label="Domains"
-          className="flex flex-col items-center"
-          size="sm"
-          onPress={() => handleTabChange("domains")}
-        >
-          <Icon icon="lucide:globe" className={`text-sm ${activeTab === 'domains' ? 'text-primary' : ''}`} />
-          <span className={`text-[10px] mt-1 ${activeTab === 'domains' ? 'text-primary' : ''}`}>Domains</span>
-        </Button>
-        
-        <Button
-          isIconOnly
-          variant="light"
-          aria-label="Leaderboard"
-          className="flex flex-col items-center"
-          size="sm"
-          onPress={() => handleTabChange("leaderboard")}
-        >
-          <Icon icon="lucide:trophy" className={`text-sm ${activeTab === 'leaderboard' ? 'text-primary' : ''}`} />
-          <span className={`text-[10px] mt-1 ${activeTab === 'leaderboard' ? 'text-primary' : ''}`}>Leaders</span>
-        </Button>
-        
-        <Button
-          isIconOnly
-          variant="light"
-          aria-label="Profile"
-          className="flex flex-col items-center"
-          size="sm"
-          onPress={() => handleTabChange("profile")}
-        >
-          <Icon icon="lucide:user" className={`text-sm ${activeTab === 'profile' ? 'text-primary' : ''}`} />
-          <span className={`text-[10px] mt-1 ${activeTab === 'profile' ? 'text-primary' : ''}`}>Profile</span>
-        </Button>
+    <nav className="fixed bottom-0 left-0 right-0 bg-background/70 backdrop-blur-md border-t border-divider z-50 h-12 md:hidden">
+      <div className="flex items-center justify-around h-full max-w-lg mx-auto px-2">
+        <NavButton icon="lucide:home" label="Home" isActive={activeTab === 'home'} onClick={() => handleTabChange("home")} />
+        <NavButton icon="lucide:compass" label="Explore" isActive={activeTab === 'explore'} onClick={() => handleTabChange("explore")} />
+        <NavButton icon="lucide:trending-up" label="Markets" isActive={activeTab === 'markets'} onClick={() => handleTabChange("markets")} />
+        <NavButton icon="lucide:grid" label="Domains" isActive={activeTab === 'domains'} onClick={() => handleTabChange("domains")} />
+        <NavButton icon="lucide:user" label="Profile" isActive={activeTab === 'profile'} onClick={() => handleTabChange("profile")} />
       </div>
-    </div>
+    </nav>
   );
 };
+
+interface NavButtonProps {
+  icon: string;
+  label: string;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+const NavButton = ({ icon, label, isActive, onClick }: NavButtonProps) => (
+  <button
+    onClick={onClick}
+    className="flex flex-col items-center justify-center w-12 h-full"
+  >
+    <div className={`flex items-center justify-center transition-colors ${isActive ? 'text-primary' : 'text-default-500'}`}>
+      <Icon icon={icon} width={18} height={18} />
+    </div>
+    <span className={`text-[10px] mt-0.5 transition-colors ${isActive ? 'text-primary' : 'text-default-500'}`}>
+      {label}
+    </span>
+  </button>
+);

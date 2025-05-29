@@ -1,12 +1,11 @@
 import React from "react";
 import { MarketStats } from "./market-stats";
-import { TimeFilter } from "./time-filter";
 import { TokenList } from "./token-list";
 import { TokenDetail } from "./token-detail";
 import { ProfilePage } from "./profile-page";
 import { Leaderboard } from "./leaderboard";
 import { DomainPage } from "./domain-page";
-import { Button, Tooltip } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 interface RoutesProps {
@@ -17,24 +16,13 @@ export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }) => {
   const [currentRoute, setCurrentRoute] = React.useState("home");
   const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<"list" | "grid">("list");
-  const [selectedTimeFilter, setSelectedTimeFilter] = React.useState("6H");
-  const [selectedKey, setSelectedKey] = React.useState<string | null>(null);
-
-  const handleTokenSelect = (tokenId: string) => {
-    setSelectedToken(tokenId);
-    setCurrentRoute("token");
-  };
-
-  const handleBackToHome = () => {
-    setCurrentRoute("home");
-    setSelectedToken(null);
-  };
+  const [selectedTimeFilter, setSelectedTimeFilter] = React.useState("24H");
 
   // Listen for mobile navigation changes
   React.useEffect(() => {
     const handleMobileNavChange = (event: Event) => {
       const customEvent = event as CustomEvent;
-      setSelectedKey(customEvent.detail.tab);
+      setCurrentRoute(customEvent.detail.tab);
       setSelectedToken(null); // Reset token selection when changing tabs
     };
     
@@ -46,106 +34,102 @@ export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }) => {
 
   const renderContent = () => {
     switch (currentRoute) {
-      case "token":
+      case "home":
         return (
-          <TokenDetail 
-            tokenId={selectedToken || ""}
-            onBack={handleBackToHome}
-          />
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <MarketStats />
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={selectedTimeFilter === "24H" ? "solid" : "flat"}
+                  onPress={() => setSelectedTimeFilter("24H")}
+                >
+                  24H
+                </Button>
+                <Button
+                  size="sm"
+                  variant={selectedTimeFilter === "7D" ? "solid" : "flat"}
+                  onPress={() => setSelectedTimeFilter("7D")}
+                >
+                  7D
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant={viewMode === "list" ? "solid" : "flat"}
+                  onPress={() => setViewMode("list")}
+                >
+                  <Icon icon="lucide:list" width={16} height={16} />
+                </Button>
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant={viewMode === "grid" ? "solid" : "flat"}
+                  onPress={() => setViewMode("grid")}
+                >
+                  <Icon icon="lucide:grid" width={16} height={16} />
+                </Button>
+              </div>
+            </div>
+            <TokenList 
+              viewMode={viewMode} 
+              onSelectToken={(tokenId) => {
+                setSelectedToken(tokenId);
+                setCurrentRoute("token");
+              }}
+            />
+          </div>
         );
-      case "profile":
+      
+      case "explore":
         return (
-          <ProfilePage 
-            isWalletConnected={isWalletConnected}
-            onBack={handleBackToHome}
-          />
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <Leaderboard 
+              onBack={() => setCurrentRoute("home")}
+              onSelectToken={(tokenId) => {
+                setSelectedToken(tokenId);
+                setCurrentRoute("token");
+              }}
+            />
+          </div>
         );
-      case "leaderboard":
-        return (
-          <Leaderboard 
-            onBack={handleBackToHome}
-            onSelectToken={handleTokenSelect}
-          />
-        );
+      
       case "domains":
         return (
           <DomainPage 
-            onBack={handleBackToHome}
+            onBack={() => setCurrentRoute("home")}
             isWalletConnected={isWalletConnected}
           />
         );
-      case "home":
-      default:
+      
+      case "profile":
         return (
-          <>
-            <MarketStats />
-            
-            <div className="mb-2 mt-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <TimeFilter 
-                  selectedFilter={selectedTimeFilter} 
-                  onFilterChange={setSelectedTimeFilter} 
-                />
-                
-                <div className="flex gap-1">
-                  <div className="flex border border-divider rounded-md overflow-hidden">
-                    <Button 
-                      isIconOnly 
-                      variant="flat" 
-                      aria-label="List View"
-                      className={`rounded-none ${viewMode === 'list' ? 'bg-content2' : ''}`}
-                      size="sm"
-                      onPress={() => setViewMode("list")}
-                    >
-                      <Icon icon="lucide:list" className="text-sm" />
-                    </Button>
-                    <Button 
-                      isIconOnly 
-                      variant="flat" 
-                      aria-label="Grid View"
-                      className={`rounded-none ${viewMode === 'grid' ? 'bg-content2' : ''}`}
-                      size="sm"
-                      onPress={() => setViewMode("grid")}
-                    >
-                      <Icon icon="lucide:grid" className="text-sm" />
-                    </Button>
-                  </div>
-                  
-                  <Tooltip content="Filter">
-                    <Button 
-                      isIconOnly 
-                      variant="flat" 
-                      aria-label="Filter"
-                      className="text-default-500"
-                      size="sm"
-                    >
-                      <Icon icon="lucide:filter" className="text-sm" />
-                    </Button>
-                  </Tooltip>
-                  
-                  <Tooltip content="Sort">
-                    <Button 
-                      isIconOnly 
-                      variant="flat" 
-                      aria-label="Sort"
-                      className="text-default-500"
-                      size="sm"
-                    >
-                      <Icon icon="lucide:arrow-up-down" className="text-sm" />
-                    </Button>
-                  </Tooltip>
-                </div>
-              </div>
-            </div>
-            
-            <TokenList 
-              viewMode={viewMode} 
-              onSelectToken={handleTokenSelect}
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <ProfilePage 
+              isWalletConnected={isWalletConnected}
             />
-          </>
+          </div>
         );
+      
+      case "token":
+        return selectedToken ? (
+          <TokenDetail
+            tokenId={selectedToken}
+            onBack={() => setCurrentRoute("home")}
+          />
+        ) : null;
+      
+      default:
+        return null;
     }
   };
 
-  return renderContent();
+  return (
+    <div className="w-full">
+      {renderContent()}
+    </div>
+  );
 };

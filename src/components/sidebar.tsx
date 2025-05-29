@@ -9,9 +9,14 @@ export const Sidebar = ({
   isOpen: boolean;
   onClose: () => void;
 }) => {
+  const handleNavigation = (route: string) => {
+    const event = new CustomEvent('mobileNavChange', { detail: { tab: route.toLowerCase() } });
+    window.dispatchEvent(event);
+  };
+
   return (
     <aside
-      className={`w-48 bg-content1 border-r border-divider h-[calc(100vh-48px)] overflow-y-auto transition-all duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} fixed md:static top-12 left-0 z-40`}
+      className={`w-48 bg-content1 border-r border-divider h-full overflow-y-auto scrollbar-hide flex flex-col transition-all duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
     >
       <div className="p-3">
         <div className="flex items-center justify-between mb-3">
@@ -29,7 +34,8 @@ export const Sidebar = ({
               <Icon
                 icon="lucide:refresh-cw"
                 className="text-default-500"
-                size={12}
+                width={12}
+                height={12}
               />
             </Button>
             <Button
@@ -42,7 +48,8 @@ export const Sidebar = ({
               <Icon
                 icon="lucide:settings"
                 className="text-default-500"
-                size={12}
+                width={12}
+                height={12}
               />
             </Button>
           </div>
@@ -51,7 +58,7 @@ export const Sidebar = ({
         <div className="text-xs text-default-500 py-2 px-1">
           Your Watchlist is empty.
           <br />
-          Click <Icon icon="lucide:star" className="inline mx-1" size={12} /> to
+          Click <Icon icon="lucide:star" className="inline mx-1" width={12} height={12} /> to
           add
         </div>
       </div>
@@ -61,7 +68,7 @@ export const Sidebar = ({
       <div className="p-3">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-bold tracking-wide text-default-700">
-            Categories
+            PAGES
           </h2>
           <Button
             isIconOnly
@@ -73,30 +80,29 @@ export const Sidebar = ({
             <Icon
               icon="lucide:chevron-down"
               className="text-default-500"
-              size={12}
+              width={12}
+              height={12}
             />
           </Button>
         </div>
 
         <div className="space-y-1">
           {[
-            { icon: "lucide:trending-up", label: "Chain Rankings" },
-            { icon: "lucide:activity", label: "DEX Rankings" },
-            { icon: "lucide:layers", label: "New Pools" },
-            { icon: "lucide:tag", label: "Categories" },
-            { icon: "lucide:bot", label: "AI Agents" },
+            { icon: "lucide:home", label: "Home", route: "home" },
+            { icon: "lucide:compass", label: "Explore", route: "explore" },
+            { icon: "lucide:trending-up", label: "Markets", route: "markets" },
+            { icon: "lucide:grid", label: "Domains", route: "domains" },
+            { icon: "lucide:user", label: "Profile", route: "profile" },
+            { icon: "lucide:bar-chart", label: "Leaderboard", route: "leaderboard" }
           ].map((item, index) => (
             <Button
               key={index}
               variant="light"
               className="w-full justify-start text-xs h-8 py-1 px-2 hover:bg-default-100"
+              onPress={() => handleNavigation(item.route)}
               startContent={
                 <div className="flex items-center justify-center w-5 h-5">
-                  <Icon
-                    icon={item.icon}
-                    size={16}
-                    className="text-default-600"
-                  />
+                  <Icon icon={item.icon} width={16} height={16} className="text-default-600" />
                 </div>
               }
             >
@@ -111,7 +117,7 @@ export const Sidebar = ({
       <div className="p-3">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-bold tracking-wide text-default-700">
-            Sort by Chain
+            NETWORKS
           </h2>
           <div className="flex gap-1">
             <Button
@@ -124,7 +130,8 @@ export const Sidebar = ({
               <Icon
                 icon="lucide:search"
                 className="text-default-500"
-                size={12}
+                width={12}
+                height={12}
               />
             </Button>
             <Button
@@ -137,7 +144,8 @@ export const Sidebar = ({
               <Icon
                 icon="lucide:chevron-down"
                 className="text-default-500"
-                size={12}
+                width={12}
+                height={12}
               />
             </Button>
           </div>
@@ -177,7 +185,7 @@ export const Sidebar = ({
               className="w-full justify-start text-xs h-8 py-1 px-2 hover:bg-default-100"
               startContent={
                 <div className="flex items-center justify-center w-5 h-5">
-                  <Icon icon={item.icon} size={16} className={item.color} />
+                  <Icon icon={item.icon} width={16} height={16} className={item.color} />
                 </div>
               }
             >
@@ -190,7 +198,7 @@ export const Sidebar = ({
       <div className="mt-auto p-2 border-t border-divider">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-default-500">CryptoTracker</span>
+            <span className="text-xs text-default-500">YouBuidl</span>
             <span className="text-xs text-default-400">v1.0.0</span>
           </div>
           <div className="flex items-center gap-2">
@@ -198,26 +206,29 @@ export const Sidebar = ({
               <Icon
                 icon="lucide:help-circle"
                 className="text-default-500"
-                size={14}
+                width={14}
+                height={14}
               />
             </Button>
             <Button isIconOnly size="sm" variant="light" aria-label="GitHub">
               <Icon
                 icon="lucide:github"
                 className="text-default-500"
-                size={14}
+                width={14}
+                height={14}
               />
             </Button>
             <Button isIconOnly size="sm" variant="light" aria-label="Discord">
               <Icon
                 icon="lucide:message-circle"
                 className="text-default-500"
-                size={14}
+                width={14}
+                height={14}
               />
             </Button>
           </div>
           <div className="text-xs text-default-400 text-center">
-            © 2024 CryptoTracker
+            © 2025 YouBuidl
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Card, CardBody, Input, Divider } from "@heroui/react";
+import { Button, Card, CardBody, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 interface DomainPageProps {
@@ -7,13 +7,15 @@ interface DomainPageProps {
   isWalletConnected: boolean;
 }
 
-export const DomainPage: React.FC<DomainPageProps> = ({ onBack, isWalletConnected }) => {
+export const DomainPage: React.FC<DomainPageProps> = ({ isWalletConnected }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedDomain, setSelectedDomain] = React.useState<string | null>(null);
-  const [activeTab, setActiveTab] = React.useState("search");
   
-  const domainExtensions = [".eth", ".base", ".sol", ".crypto"];
-  
+  const domainExtensions = [
+    { ext: ".youbuidl", chain: "YouBuidl", icon: "heroui:square", color: "text-[#8dcc75]", desc: "The main YouBuidl domain" },
+    { ext: ".givestation", chain: "GiveStation", icon: "heroui:square", color: "text-[#8dcc75]", desc: "For GiveStation community" }
+  ];
+
   const handleSearch = () => {
     if (searchTerm) {
       setSelectedDomain(searchTerm);
@@ -21,184 +23,132 @@ export const DomainPage: React.FC<DomainPageProps> = ({ onBack, isWalletConnecte
   };
   
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Button 
-          variant="light" 
-          size="sm" 
-          onPress={onBack}
-          startContent={<Icon icon="lucide:arrow-left" size={14} />}
-        >
-          Back
-        </Button>
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <div className="relative py-20 px-4 text-center space-y-6 bg-gradient-to-b from-primary/5 to-transparent">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+          Claim your <span className="text-[#8dcc75]">.youbuidl</span> &<br/>
+          <span className="text-[#8dcc75]">.givestation</span> name
+        </h1>
+        <p className="text-default-500 max-w-2xl mx-auto">
+          Own your digital identity. Register a unique name for your project, community,
+          or yourself on the next generation of web3.
+        </p>
         
-        <div className="flex gap-1">
-          <Button 
-            variant="flat" 
-            size="sm" 
-            color="secondary"
-            disabled={!isWalletConnected}
-          >
-            My Domains
-          </Button>
-        </div>
-      </div>
-      
-      <Card>
-        <CardBody className="p-3">
-          <h2 className="text-base font-semibold mb-3">Domain Name Service</h2>
-          
-          <div className="flex border border-divider rounded-md overflow-hidden mb-3">
+        {/* Search Box */}
+        <div className="max-w-xl mx-auto">
+          <div className="flex gap-2 p-1 rounded-xl bg-content1">
+            <Input
+              classNames={{
+                base: "flex-1",
+                mainWrapper: "h-full",
+                input: "text-base",
+                inputWrapper: "h-12 font-normal shadow-none",
+              }}
+              placeholder="Search for a name..."
+              size="lg"
+              variant="bordered"
+              value={searchTerm}
+              onValueChange={setSearchTerm}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            />
             <Button 
-              variant="flat" 
-              className={`rounded-none flex-1 text-xs ${activeTab === 'search' ? 'bg-content2' : ''}`}
-              size="sm"
-              onPress={() => setActiveTab("search")}
+              size="lg"
+              color="primary"
+              className="px-8 font-semibold"
+              onPress={handleSearch}
             >
               Search
             </Button>
-            <Button 
-              variant="flat" 
-              className={`rounded-none flex-1 text-xs ${activeTab === 'popular' ? 'bg-content2' : ''}`}
-              size="sm"
-              onPress={() => setActiveTab("popular")}
-            >
-              Popular
-            </Button>
-            <Button 
-              variant="flat" 
-              className={`rounded-none flex-1 text-xs ${activeTab === 'trending' ? 'bg-content2' : ''}`}
-              size="sm"
-              onPress={() => setActiveTab("trending")}
-            >
-              Trending
-            </Button>
           </div>
-          
-          {activeTab === "search" && (
-            <>
-              <div className="flex gap-2 mb-4">
-                <Input
-                  classNames={{
-                    base: "flex-1",
-                    mainWrapper: "h-full",
-                    input: "text-xs",
-                    inputWrapper: "h-8 font-normal domain-search-input",
-                  }}
-                  placeholder="Enter domain name"
-                  size="sm"
-                  value={searchTerm}
-                  onValueChange={setSearchTerm}
-                  startContent={<Icon icon="lucide:search" className="text-default-400" size={14} />}
-                />
+        </div>
+      </div>
+
+      {/* Search Results */}
+      {selectedDomain && (
+        <div className="max-w-4xl mx-auto p-4 space-y-6 mt-8">
+          <div className="space-y-4">
+            {domainExtensions.map(({ ext, chain, icon, color, desc }) => {
+              const isAvailable = Math.random() > 0.3;
+              const price = Math.floor(Math.random() * 50) + 10;
+              
+              return (
+                <Card key={ext} className="border border-divider">
+                  <CardBody className="p-6">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Icon icon={icon} className={color} width={20} height={20} />
+                          <h3 className="text-xl font-semibold">{selectedDomain}{ext}</h3>
+                        </div>
+                        <p className="text-sm text-default-500">{desc}</p>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        {isAvailable ? (
+                          <>
+                            <div className="text-right">
+                              <div className="text-sm text-default-500">Price</div>
+                              <div className="font-semibold">${price} /year</div>
+                            </div>
+                            <Button
+                              color="primary"
+                              size="lg"
+                              className="font-semibold"
+                              disabled={!isWalletConnected}
+                            >
+                              Register
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-right">
+                              <div className="text-sm text-danger">Taken</div>
+                              <div className="text-sm text-default-500">Registered on May 1, 2025</div>
+                            </div>
+                            <Button
+                              variant="flat"
+                              size="lg"
+                              className="font-semibold"
+                              disabled={!isWalletConnected}
+                            >
+                              Make Offer
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Connect Wallet Notice */}
+      {!isWalletConnected && selectedDomain && (
+        <div className="max-w-4xl mx-auto p-4 mt-4">
+          <Card className="border border-divider bg-primary/5">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold">Connect Wallet to Register</h3>
+                  <p className="text-sm text-default-500">You need to connect your wallet to register domain names</p>
+                </div>
                 <Button 
-                  color="secondary" 
-                  size="sm"
-                  onPress={handleSearch}
+                  color="primary"
+                  size="lg"
+                  className="font-semibold"
+                  startContent={<Icon icon="heroui:wallet" width={20} height={20} />}
                 >
-                  Search
+                  Connect Wallet
                 </Button>
               </div>
-              
-              {selectedDomain && (
-                <Card className="domain-card mb-4">
-                  <CardBody className="p-3">
-                    <h3 className="text-sm font-medium mb-2">Domain Availability</h3>
-                    
-                    <div className="space-y-2">
-                      {domainExtensions.map((ext) => {
-                        const isAvailable = Math.random() > 0.5;
-                        
-                        return (
-                          <div key={ext} className="flex items-center justify-between p-2 border-b border-divider">
-                            <div className="flex items-center gap-2">
-                              <Icon 
-                                icon={isAvailable ? "lucide:check-circle" : "lucide:x-circle"} 
-                                className={isAvailable ? "text-success" : "text-danger"}
-                                size={16}
-                              />
-                              <span className="text-xs font-medium">{selectedDomain}{ext}</span>
-                            </div>
-                            <div>
-                              {isAvailable ? (
-                                <Button 
-                                  size="sm" 
-                                  color="primary"
-                                  className="text-[10px] h-6 px-2"
-                                  disabled={!isWalletConnected}
-                                >
-                                  Register
-                                </Button>
-                              ) : (
-                                <span className="text-xs text-danger">Taken</span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {!isWalletConnected && (
-                      <div className="mt-3 p-2 bg-content2 rounded-md text-center">
-                        <p className="text-xs text-default-500 mb-2">Connect your wallet to register domains</p>
-                        <Button size="sm" color="primary">Connect Wallet</Button>
-                      </div>
-                    )}
-                  </CardBody>
-                </Card>
-              )}
-            </>
-          )}
-          
-          {activeTab === "popular" && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {["crypto", "defi", "nft", "dao", "web3", "metaverse"].map((domain) => (
-                <Card key={domain} className="domain-card">
-                  <CardBody className="p-2">
-                    <div className="flex flex-col items-center">
-                      <span className="text-xs font-medium mb-1">{domain}.eth</span>
-                      <Button 
-                        size="sm" 
-                        variant="flat" 
-                        color="secondary"
-                        className="text-[10px] h-6 w-full"
-                        disabled={!isWalletConnected}
-                      >
-                        Check
-                      </Button>
-                    </div>
-                  </CardBody>
-                </Card>
-              ))}
-            </div>
-          )}
-          
-          {activeTab === "trending" && (
-            <div className="space-y-2">
-              {["bitcoin", "solana", "ethereum", "meme", "ai", "token"].map((domain, index) => (
-                <div key={domain} className="flex items-center justify-between p-2 border-b border-divider">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium w-5 text-center">{index + 1}</span>
-                    <span className="text-xs font-medium">{domain}.eth</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-default-400">{Math.floor(Math.random() * 100) + 10} searches</span>
-                    <Button 
-                      size="sm" 
-                      variant="flat" 
-                      color="secondary"
-                      className="text-[10px] h-6 px-2"
-                      disabled={!isWalletConnected}
-                    >
-                      Check
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardBody>
-      </Card>
+            </CardBody>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
