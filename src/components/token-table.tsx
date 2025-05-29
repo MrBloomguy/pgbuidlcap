@@ -30,28 +30,27 @@ export const TokenTable = ({ onTokenSelect }: TokenTableProps) => {
       >
         <TableHeader>
           <TableColumn className="text-xs w-[40px]">#</TableColumn>
-          <TableColumn className="text-xs">PROJECT</TableColumn>
+          <TableColumn className="text-xs">Project</TableColumn>
           <TableColumn className="text-xs text-right">
-            TOTAL FUNDING
+            Total Funding
           </TableColumn>
           <TableColumn className="text-xs text-right hidden md:table-cell">
-            FUNDING STATUS
+            Funding Status
           </TableColumn>
           <TableColumn className="text-xs text-right hidden lg:table-cell">
-            CATEGORY
+            Category
           </TableColumn>
           <TableColumn className="text-xs text-right hidden lg:table-cell">
-            ROUND
+            Round
           </TableColumn>
           <TableColumn className="text-xs text-right hidden md:table-cell">
-            LINK
+            Links
           </TableColumn>
-          <TableColumn className="text-xs text-right">6H</TableColumn>
           <TableColumn className="text-xs text-right hidden sm:table-cell">
-            FUNDING SOURCES
+            Funding Sources
           </TableColumn>
           <TableColumn className="text-xs text-right hidden xl:table-cell">
-            ACTIONS
+            Actions
           </TableColumn>
         </TableHeader>
         <TableBody>
