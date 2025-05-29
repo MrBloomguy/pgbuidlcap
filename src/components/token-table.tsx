@@ -50,7 +50,7 @@ export const TokenTable = ({ onTokenSelect }: TokenTableProps) => {
             Funding Sources
           </TableColumn>
           <TableColumn className="text-xs text-right hidden xl:table-cell">
-            Actions
+            Liquidity
           </TableColumn>
         </TableHeader>
         <TableBody>
@@ -123,11 +123,15 @@ export const TokenTable = ({ onTokenSelect }: TokenTableProps) => {
                 </div>
               </TableCell>
               <TableCell className="text-right hidden xl:table-cell">
-                <div className="flex gap-1">
-                  <Icon icon="lucide:eye" size={12} className="text-default-400 cursor-pointer" />
-                  <Icon icon="lucide:bookmark" size={12} className="text-default-400 cursor-pointer" />
-                  <Icon icon="lucide:share-2" size={12} className="text-default-400 cursor-pointer" />
-                </div>
+                <Button
+                  size="sm"
+                  color="primary"
+                  variant="solid"
+                  className="text-[10px] h-6 px-2"
+                  onPress={() => window.open(`https://funding.example.com/project/${token.id}`, '_blank')}
+                >
+                  Fund
+                </Button>
               </TableCell>
             </TableRow>
           ))}
