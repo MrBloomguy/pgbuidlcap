@@ -36,7 +36,7 @@ export const TokenDetail: React.FC<TokenDetailProps> = ({ tokenId, onBack }) => 
         >
           <Icon icon="lucide:arrow-left" size={16} />
         </Button>
-        <h1 className="text-lg font-semibold">Token Details</h1>
+        <h1 className="text-lg font-semibold">Project Details</h1>
       </div>
       
       <Card className="token-detail-card">
