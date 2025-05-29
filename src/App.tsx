@@ -41,7 +41,7 @@ export default function App() {
           <NavbarBrand>
             <div className="flex items-center gap-1">
               <Icon icon="lucide:bar-chart-2" className="text-secondary text-lg" />
-              <p className="font-bold text-inherit text-sm hidden sm:block">CryptoTracker</p>
+              <p className="font-bold text-inherit text-sm hidden sm:block">YouBuidl</p>
             </div>
           </NavbarBrand>
           
@@ -49,14 +49,22 @@ export default function App() {
             <NavbarItem>
               <Input
                 classNames={{
-                  base: "max-w-full sm:max-w-[20rem]",
+                  base: "max-w-full sm:max-w-[24rem]",
                   mainWrapper: "h-full",
-                  input: "text-xs",
-                  inputWrapper: "h-8 font-normal text-default-500 bg-default-100/50 compact-input",
+                  input: "text-sm font-medium placeholder:text-default-400",
+                  inputWrapper: "h-10 font-normal text-default-600 bg-default-100/70 border border-default-200 rounded-full hover:border-default-300 focus-within:border-primary focus-within:bg-background transition-all duration-200",
                 }}
-                placeholder="Search tokens..."
-                size="sm"
-                startContent={<Icon icon="lucide:search" className="text-default-400 text-sm" />}
+                placeholder="Search tokens, pairs, or addresses..."
+                size="md"
+                radius="full"
+                startContent={<Icon icon="lucide:search" className="text-default-400" size={18} />}
+                endContent={
+                  <div className="flex items-center gap-1">
+                    <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-semibold text-default-500 bg-default-200 rounded">
+                      ⌘K
+                    </kbd>
+                  </div>
+                }
                 type="search"
               />
             </NavbarItem>
