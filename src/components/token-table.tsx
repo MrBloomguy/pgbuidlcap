@@ -9,6 +9,7 @@ import {
   Avatar,
   Tooltip,
   Chip,
+  Button,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { formatNumber, getPercentageClass } from "../utils/format-utils";
@@ -31,9 +32,7 @@ export const TokenTable = ({ onTokenSelect }: TokenTableProps) => {
         <TableHeader>
           <TableColumn className="text-xs w-[40px]">#</TableColumn>
           <TableColumn className="text-xs">Project</TableColumn>
-          <TableColumn className="text-xs text-right">
-            Total Funding
-          </TableColumn>
+          <TableColumn className="text-xs text-right">Total Funding</TableColumn>
           <TableColumn className="text-xs text-right hidden md:table-cell">
             Funding Status
           </TableColumn>
@@ -49,9 +48,7 @@ export const TokenTable = ({ onTokenSelect }: TokenTableProps) => {
           <TableColumn className="text-xs text-right hidden sm:table-cell">
             Funding Sources
           </TableColumn>
-          <TableColumn className="text-xs text-right hidden xl:table-cell">
-            Liquidity
-          </TableColumn>
+          <TableColumn className="text-xs text-right">Actions</TableColumn>
         </TableHeader>
         <TableBody>
           {tokens.map((token, index) => (
@@ -112,8 +109,8 @@ export const TokenTable = ({ onTokenSelect }: TokenTableProps) => {
               </TableCell>
               <TableCell className="text-right hidden md:table-cell">
                 <div className="flex gap-1">
-                  <Icon icon="lucide:external-link" size={12} className="text-primary cursor-pointer" />
-                  <Icon icon="lucide:twitter" size={12} className="text-primary cursor-pointer" />
+                  <Icon icon="lucide:external-link" width={12} height={12} className="text-primary cursor-pointer" />
+                  <Icon icon="lucide:twitter" width={12} height={12} className="text-primary cursor-pointer" />
                 </div>
               </TableCell>
               <TableCell className="text-right hidden sm:table-cell">
@@ -122,7 +119,7 @@ export const TokenTable = ({ onTokenSelect }: TokenTableProps) => {
                   <Chip size="sm" variant="flat" color="secondary">Angel</Chip>
                 </div>
               </TableCell>
-              <TableCell className="text-right hidden xl:table-cell">
+              <TableCell className="text-right">
                 <Button
                   size="sm"
                   color="primary"

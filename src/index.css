@@ -288,3 +288,86 @@
     padding-right: 1.5rem;
   }
 }
+
+/* Table layout styles */
+.table-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 1rem;
+  padding-bottom: 5rem; /* Space for mobile nav + pagination */
+}
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background-color: inherit;
+  border-radius: 8px;
+}
+
+.table-container table {
+  width: 100%;
+  min-width: max-content;
+  background-color: inherit;
+}
+
+/* Sticky column styles */
+.sticky-token-column {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background-color: inherit;
+}
+
+.sticky-token-cell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: inherit;
+}
+
+/* Scrollable column styles */
+.scrollable-column {
+  min-width: 100px;
+  white-space: nowrap;
+}
+
+/* Mobile-friendly scrollbar */
+.table-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: rgba(var(--aa-scrollbar-thumb-background-color-rgb), 0.3);
+  border-radius: 4px;
+}
+
+/* Pagination styles */
+.pagination-container {
+  position: fixed;
+  bottom: 3.5rem; /* Space above mobile nav */
+  left: 0;
+  right: 0;
+  padding: 0.5rem;
+  background-color: inherit;
+  border-top: 1px solid rgba(var(--aa-panel-border-color-rgb), var(--aa-panel-border-color-alpha));
+  z-index: 10;
+}
+
+.pagination-nav {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure the page doesn't scroll horizontally */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
