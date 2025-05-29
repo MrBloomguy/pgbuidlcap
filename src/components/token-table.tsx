@@ -100,35 +100,34 @@ export const TokenTable = ({ onTokenSelect }: TokenTableProps) => {
                 </div>
               </TableCell>
               <TableCell className="text-right hidden md:table-cell">
-                <span className="text-xs">{token.age}</span>
+                <Chip size="sm" variant="flat" color="success">
+                  Active
+                </Chip>
               </TableCell>
               <TableCell className="text-right hidden lg:table-cell">
-                <span className="text-xs">
-                  {formatNumber(token.transactions)}
-                </span>
+                <span className="text-xs">DeFi</span>
               </TableCell>
               <TableCell className="text-right hidden lg:table-cell">
-                <span className="text-xs">${formatNumber(token.volume)}</span>
+                <span className="text-xs">Series A</span>
               </TableCell>
-              <TableCell
-                className={`text-right hidden md:table-cell ${getPercentageClass(token.change1h)}`}
-              >
-                <span className="text-xs">{token.change1h}%</span>
+              <TableCell className="text-right hidden md:table-cell">
+                <div className="flex gap-1">
+                  <Icon icon="lucide:external-link" size={12} className="text-primary cursor-pointer" />
+                  <Icon icon="lucide:twitter" size={12} className="text-primary cursor-pointer" />
+                </div>
               </TableCell>
-              <TableCell
-                className={`text-right ${getPercentageClass(token.change6h)}`}
-              >
-                <span className="text-xs">{token.change6h}%</span>
-              </TableCell>
-              <TableCell
-                className={`text-right hidden sm:table-cell ${getPercentageClass(token.change24h)}`}
-              >
-                <span className="text-xs">{token.change24h}%</span>
+              <TableCell className="text-right hidden sm:table-cell">
+                <div className="flex gap-1 flex-wrap">
+                  <Chip size="sm" variant="flat" color="primary">VC Fund</Chip>
+                  <Chip size="sm" variant="flat" color="secondary">Angel</Chip>
+                </div>
               </TableCell>
               <TableCell className="text-right hidden xl:table-cell">
-                <span className="text-xs">
-                  ${formatNumber(token.liquidity)}
-                </span>
+                <div className="flex gap-1">
+                  <Icon icon="lucide:eye" size={12} className="text-default-400 cursor-pointer" />
+                  <Icon icon="lucide:bookmark" size={12} className="text-default-400 cursor-pointer" />
+                  <Icon icon="lucide:share-2" size={12} className="text-default-400 cursor-pointer" />
+                </div>
               </TableCell>
             </TableRow>
           ))}
