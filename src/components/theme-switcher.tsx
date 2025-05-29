@@ -23,17 +23,16 @@ export const ThemeSwitcher = () => {
       content={`Switch to ${isDark ? "light" : "dark"} mode`}
       placement="bottom"
     >
-      <div className="flex items-center gap-1">
-        <Icon icon="lucide:sun" className={`text-default-500 ${!isDark && "text-warning-500"}`} size={14} />
-        <Switch 
-          isSelected={isDark}
-          onValueChange={handleToggle}
-          size="sm"
-          color="secondary"
-          className="mx-0.5 scale-75"
+      <button 
+        onClick={handleToggle}
+        className="p-2 hover:bg-default-100 rounded-full transition-colors"
+      >
+        <Icon 
+          icon={isDark ? "lucide:sun" : "lucide:moon"} 
+          className={isDark ? "text-warning-500" : "text-secondary-500"} 
+          size={16} 
         />
-        <Icon icon="lucide:moon" className={`text-default-500 ${isDark && "text-secondary-500"}`} size={14} />
-      </div>
+      </button>
     </Tooltip>
   );
 };

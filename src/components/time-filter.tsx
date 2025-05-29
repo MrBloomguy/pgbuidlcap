@@ -9,12 +9,14 @@ interface TimeFilterProps {
 
 export const TimeFilter = ({ selectedFilter, onFilterChange }: TimeFilterProps) => {
   const timeFilters = [
-    { label: "1H", icon: "lucide:clock-1" },
-    { label: "6H", icon: "lucide:clock-6" },
-    { label: "24H", icon: "lucide:clock" },
-    { label: "7D", icon: "lucide:calendar" },
-    { label: "30D", icon: "lucide:calendar-range" },
-    { label: "ALL", icon: "lucide:infinity" }
+    { label: "ALL", icon: "lucide:clock-1" },
+    { label: "DAPP", icon: "lucide:clock-6" },
+    { label: "INFRA", icon: "lucide:clock" },
+    { label: "DEFI", icon: "lucide:calendar" },
+    { label: "GITCOIN", icon: "lucide:calendar-range" },
+    { label: "GIVETH", icon: "lucide:calendar-range" },
+    { label: "SOCIAL", icon: "lucide:calendar-range" },
+    { label: "GAMEFI", icon: "lucide:infinity" }
   ];
   
   return (

@@ -8,20 +8,21 @@ export const MarketStats = () => {
       <Card className="compact-card">
         <CardBody className="py-2">
           <div className="flex flex-col">
-            <span className="text-[10px] text-default-500">24H VOLUME</span>
+            <span className="text-[20px] text-default-500">Explore, track and fund public goods.</span>
             <span className="text-sm font-bold">${formatNumber(22580000000)}</span>
           </div>
         </CardBody>
       </Card>
-      
+
       <Card className="compact-card">
         <CardBody className="py-2">
           <div className="flex flex-col">
-            <span className="text-[10px] text-default-500">24H TXNS</span>
-            <span className="text-sm font-bold">{formatNumber(47260062)}</span>
+            <span className="text-[20px] text-default-500">Explore, track and fund public goods.</span>
+            <span className="text-sm font-bold">${formatNumber(22580000000)}</span>
           </div>
         </CardBody>
       </Card>
+
     </div>
   );
 };

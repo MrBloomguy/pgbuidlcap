@@ -39,35 +39,47 @@ export default function App() {
           className="border-b border-divider compact-nav h-12 bg-background/70 backdrop-blur-md"
           isBordered
         >
-          <NavbarBrand>
-            <div className="flex items-center gap-2">
-              <img src="/youbuidlsocialsvg.svg" alt="YouBuidl Logo" className="h-8 w-8" />
-              <p className="font-bold text-inherit text-sm hidden sm:block">YouBuidl</p>
-            </div>
-          </NavbarBrand>
-          
-          <NavbarContent className="hidden md:flex gap-2" justify="center">
+          <NavbarContent className="gap-2">
+            <NavbarBrand>
+              <div className="flex items-center gap-2">
+                <img src="/youbuidlsocialsvg.svg" alt="YouBuidl Logo" className="h-8 w-8" />
+                <p className="font-bold text-inherit text-sm hidden sm:block">YouBuidl</p>
+              </div>
+            </NavbarBrand>
+
             <NavbarItem>
               <Input
                 classNames={{
-                  base: "max-w-full sm:max-w-[24rem]",
+                  base: "max-w-full sm:max-w-[20rem]",
                   mainWrapper: "h-full",
                   input: "text-sm font-medium placeholder:text-default-400",
-                  inputWrapper: "h-10 font-normal text-default-600 bg-default-100/70 border border-default-200 rounded-full hover:border-default-300 focus-within:border-primary focus-within:bg-background transition-all duration-200",
+                  inputWrapper: "h-8 font-normal text-default-300 bg-default-100/60 border border-default-200 rounded-md hover:border-default-300 focus-within:border-primary focus-within:bg-background transition-all duration-200",
                 }}
-                placeholder="Search tokens, pairs, or addresses..."
-                size="md"
-                radius="full"
-                startContent={<Icon icon="lucide:search" className="text-default-400" width={18} height={18} />}
-                endContent={
-                  <div className="flex items-center gap-1">
-                    <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-semibold text-default-500 bg-default-200 rounded">
-                      ⌘K
-                    </kbd>
-                  </div>
-                }
+                placeholder="Search projects, rounds, or builders..."
+                size="sm"
+                radius="md"
+                startContent={<Icon icon="lucide:search" className="text-default-400" width={16} height={16} />}
                 type="search"
               />
+            </NavbarItem>
+
+            <NavbarItem>
+              <div className="hidden md:flex gap-4">
+                <Button
+                  variant="light"
+                  className="text-sm font-medium"
+                  startContent={<Icon icon="lucide:compass" width={16} height={16} />}
+                >
+                  Explore
+                </Button>
+                <Button
+                  variant="light"
+                  className="text-sm font-medium"
+                  startContent={<Icon icon="lucide:trending-up" width={16} height={16} />}
+                >
+                  Trending
+                </Button>
+              </div>
             </NavbarItem>
           </NavbarContent>
           
@@ -75,17 +87,7 @@ export default function App() {
             <NavbarItem className="hidden md:flex">
               <ThemeSwitcher />
             </NavbarItem>
-            <NavbarItem className="hidden sm:flex">
-              <Button 
-                color="secondary" 
-                variant="flat" 
-                startContent={<Icon icon="lucide:download" width={16} height={16} />}
-                size="sm"
-                className="compact-button"
-              >
-                Get App
-              </Button>
-            </NavbarItem>
+          
             <NavbarItem>
               <Button 
                 color={isWalletConnected ? "success" : "primary"}
