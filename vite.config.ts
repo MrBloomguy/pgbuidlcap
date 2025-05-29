@@ -7,6 +7,8 @@ import vitePluginInjectDataLocator from "./plugins/vite-plugin-inject-data-locat
 export default defineConfig({
   plugins: [react(), vitePluginInjectDataLocator()],
   server: {
+    host: "0.0.0.0",
+    port: 5000,
     allowedHosts: true,
   },
 });
