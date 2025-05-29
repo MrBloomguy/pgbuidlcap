@@ -130,7 +130,15 @@ export const TokenList: React.FC<TokenListProps> = ({
                   </div>
                   <div>
                     <p className="text-[10px] text-default-400">Actions</p>
-                    <p>${formatNumber(token.liquidity)}</p>
+                    <Button
+                      size="sm"
+                      color="primary"
+                      variant="solid"
+                      className="text-[10px] h-5 px-2 mt-1"
+                      onPress={() => window.open(`https://funding.example.com/project/${token.id}`, '_blank')}
+                    >
+                      Fund
+                    </Button>
                   </div>
                 </div>
 
