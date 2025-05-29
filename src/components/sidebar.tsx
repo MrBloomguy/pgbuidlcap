@@ -89,6 +89,29 @@ export const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           ))}
         </div>
       </div>
+      
+      <div className="mt-auto p-2 border-t border-divider">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-default-500">CryptoTracker</span>
+            <span className="text-xs text-default-400">v1.0.0</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button isIconOnly size="sm" variant="light" aria-label="Help">
+              <Icon icon="lucide:help-circle" className="text-default-500" size={14} />
+            </Button>
+            <Button isIconOnly size="sm" variant="light" aria-label="GitHub">
+              <Icon icon="lucide:github" className="text-default-500" size={14} />
+            </Button>
+            <Button isIconOnly size="sm" variant="light" aria-label="Discord">
+              <Icon icon="lucide:message-circle" className="text-default-500" size={14} />
+            </Button>
+          </div>
+          <div className="text-xs text-default-400 text-center">
+            © 2024 CryptoTracker
+          </div>
+        </div>
+      </div>
     </aside>
   );
 };
