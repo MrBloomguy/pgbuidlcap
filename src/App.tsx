@@ -40,8 +40,8 @@ export default function App() {
           isBordered
         >
           <NavbarBrand>
-            <div className="flex items-center gap-1">
-              <Icon icon="lucide:bar-chart-2" className="text-secondary text-lg" />
+            <div className="flex items-center gap-2">
+              <img src="/youbuidlsocialsvg.svg" alt="YouBuidl Logo" className="h-8 w-8" />
               <p className="font-bold text-inherit text-sm hidden sm:block">YouBuidl</p>
             </div>
           </NavbarBrand>
@@ -135,8 +135,8 @@ export default function App() {
           {!isMobile && <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />}
           
           {/* Scrollable Content */}
-          <main className="flex-1 overflow-y-auto">
-            <div className="p-4 min-h-full">
+          <main className="flex-1 overflow-y-auto min-h-0">
+            <div className="p-4 h-full flex flex-col">
               <Routes isWalletConnected={isWalletConnected} />
             </div>
           </main>

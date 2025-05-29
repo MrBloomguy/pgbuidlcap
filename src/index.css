@@ -212,19 +212,38 @@
 
 .token-grid-card {
   border: 1px solid rgba(var(--aa-panel-border-color-rgb), var(--aa-panel-border-color-alpha));
-  border-radius: 8px;
+  border-radius: 16px;
   transition: all 0.2s ease;
+  overflow: hidden;
 }
 
 .token-grid-card:hover {
   border-color: rgba(var(--aa-primary-color-rgb), 0.5);
   transform: translateY(-2px);
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
 }
 
 .social-action-btn {
   padding: 0 0.35rem;
   height: 1.75rem;
   min-width: 0;
+}
+
+.social-action-btn[data-variant="light"] {
+  color: #CDEB63;
+}
+
+.social-action-btn[data-variant="light"]:hover {
+  background-color: rgba(205, 235, 99, 0.1);
+}
+
+.social-action-btn[data-variant="solid"] {
+  background-color: #CDEB63;
+  color: black;
+}
+
+.social-action-btn[data-variant="solid"]:hover {
+  background-color: rgba(205, 235, 99, 0.9);
 }
 
 /* Fluid layout improvements */
@@ -294,16 +313,18 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 1rem;
-  padding-bottom: 5rem; /* Space for mobile nav + pagination */
+  height: 100%;
+  min-height: 0;
 }
 
 .table-container {
   width: 100%;
   overflow-x: auto;
+  flex: 1;
   -webkit-overflow-scrolling: touch;
   background-color: inherit;
   border-radius: 8px;
+  padding: 0.5rem;
 }
 
 .table-container table {
@@ -349,13 +370,14 @@
 
 /* Pagination styles */
 .pagination-container {
-  position: fixed;
-  bottom: 3.5rem; /* Space above mobile nav */
+  position: sticky;
+  bottom: 0;
   left: 0;
   right: 0;
   padding: 0.5rem;
   background-color: inherit;
   border-top: 1px solid rgba(var(--aa-panel-border-color-rgb), var(--aa-panel-border-color-alpha));
+  margin-top: auto;
   z-index: 10;
 }
 

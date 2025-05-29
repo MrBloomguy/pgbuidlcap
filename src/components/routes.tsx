@@ -7,6 +7,7 @@ import { Leaderboard } from "./leaderboard";
 import { DomainPage } from "./domain-page";
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { TimeFilter } from "./time-filter";
 
 interface RoutesProps {
   isWalletConnected: boolean;
@@ -39,38 +40,28 @@ export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }) => {
           <div className="space-y-4 animate-in fade-in duration-300">
             <MarketStats />
             <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={selectedTimeFilter === "24H" ? "solid" : "flat"}
-                  onPress={() => setSelectedTimeFilter("24H")}
-                >
-                  24H
-                </Button>
-                <Button
-                  size="sm"
-                  variant={selectedTimeFilter === "7D" ? "solid" : "flat"}
-                  onPress={() => setSelectedTimeFilter("7D")}
-                >
-                  7D
-                </Button>
-              </div>
+              <TimeFilter
+                selectedFilter={selectedTimeFilter}
+                onFilterChange={setSelectedTimeFilter}
+              />
               <div className="flex gap-2">
                 <Button
                   isIconOnly
                   size="sm"
                   variant={viewMode === "list" ? "solid" : "flat"}
+                  className={viewMode === "list" ? "bg-[#CDEB63] text-black hover:bg-[#CDEB63]/90" : "hover:bg-[#CDEB63]/10"}
                   onPress={() => setViewMode("list")}
                 >
-                  <Icon icon="lucide:list" width={16} height={16} />
+                  <Icon icon="lucide:list" width={16} height={16} className={viewMode === "list" ? "text-black" : "text-[#CDEB63]"} />
                 </Button>
                 <Button
                   isIconOnly
                   size="sm"
                   variant={viewMode === "grid" ? "solid" : "flat"}
+                  className={viewMode === "grid" ? "bg-[#CDEB63] text-black hover:bg-[#CDEB63]/90" : "hover:bg-[#CDEB63]/10"}
                   onPress={() => setViewMode("grid")}
                 >
-                  <Icon icon="lucide:grid" width={16} height={16} />
+                  <Icon icon="lucide:grid" width={16} height={16} className={viewMode === "grid" ? "text-black" : "text-[#CDEB63]"} />
                 </Button>
               </div>
             </div>
