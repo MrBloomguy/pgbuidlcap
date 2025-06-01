@@ -10,6 +10,12 @@ const mobileLinks = [
     key: "explore",
   },
   {
+    path: "/submit",
+    icon: "lucide:plus-circle",
+    label: "Submit",
+    key: "submit",
+  },
+  {
     path: "/search",
     icon: "lucide:search",
     label: "Search",

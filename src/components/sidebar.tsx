@@ -176,6 +176,12 @@ export const Sidebar = ({
 			key: "explore",
 		},
 		{
+			path: "/submit",
+			icon: "lucide:plus-circle",
+			label: "Submit Project",
+			key: "submit",
+		},
+		{
 			path: "/search",
 			icon: "lucide:search",
 			label: "Search",
@@ -302,9 +308,10 @@ export const Sidebar = ({
 				{pagesList.map((page) => (
 					<Button
 						key={page.key}
-						variant="light"
+						variant={page.key === 'submit' ? 'solid' : 'light'}
+						color={page.key === 'submit' ? 'primary' : 'default'}
 						className={`w-full justify-start text-sm h-8 px-2 hover:bg-default-100 mb-[2px] ${
-							activeRoute === page.key ? "bg-primary/10 text-primary" : "text-default-500"
+							activeRoute === page.key && page.key !== 'submit' ? "bg-primary/10 text-primary" : ""
 						}`}
 						onClick={() => {
 							setActiveRoute(page.key);
@@ -343,17 +350,15 @@ export const Sidebar = ({
 					isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
 				}`}
 			>
-				{/* Pages Section - Only shown on desktop */}
-				{!isMobile && (
-					<div className="p-2 border-b border-divider">
-						<div className="flex items-center justify-between mb-2">
-							<h2 className="text-xs font-bold tracking-wide text-default-700">
-								PAGES
-							</h2>
-						</div>
-						<PagesSection />
+				{/* Pages Section */}
+				<div className="p-2 border-b border-divider">
+					<div className="flex items-center justify-between mb-2">
+						<h2 className="text-xs font-bold tracking-wide text-default-700">
+							PAGES
+						</h2>
 					</div>
-				)}
+					<PagesSection />
+				</div>
 
 				{/* Networks Section */}
 				<div className={`p-2 ${!isMobile ? 'border-t border-divider' : ''}`}>

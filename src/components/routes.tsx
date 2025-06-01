@@ -5,6 +5,7 @@ import { TokenDetail } from "./token-detail";
 import { ProfilePage } from "./profile-page";
 import { Leaderboard } from "./leaderboard";
 import { DomainPage } from "./domain-page";
+import { SubmitPage } from "./submit-page";
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { TimeFilter } from "./time-filter";
@@ -77,6 +78,7 @@ export const Routes: React.FC = () => {
             </div>
           )}
           {currentRoute === "profile" && <ProfilePage />}
+          {currentRoute === "submit" && <SubmitPage />}
           {currentRoute === "leaderboard" && (
             <Leaderboard 
               onBack={() => setCurrentRoute("explore")}
