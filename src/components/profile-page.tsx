@@ -1,6 +1,9 @@
 import React from "react";
-import { Card, CardBody, Avatar, Button, Tabs, Tab, Chip, Progress } from "@heroui/react";
+import { Card, CardBody, Avatar, Button, Tabs, Tab, Chip, Progress, Divider, Modal, ModalContent, Input, Textarea } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useAccount, useEnsName, useEnsAvatar, useBalance } from 'wagmi';
+import { useTheme } from "@heroui/use-theme";
+import { getAvatarUrl, generateAvatar, saveAvatarSettings, AvatarCustomization } from '../utils/avatar-utils';
 
 interface Badge {
   id: string;
@@ -12,453 +15,472 @@ interface Badge {
   unlockedAt: string;
 }
 
-interface ProfilePageProps {
-  isWalletConnected: boolean;
+const StatCard = ({ label, value, icon }: { label: string; value: string; icon: string }) => (
+  <div className="flex items-center gap-3 p-3 bg-default-50 rounded-xl">
+    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+      <Icon icon={icon} className="text-primary" />
+    </div>
+    <div>
+      <p className="text-sm text-default-400">{label}</p>
+      <p className="font-semibold">{value}</p>
+    </div>
+  </div>
+);
+
+interface EditModalState {
+  isOpen: boolean;
+  type: 'avatar' | 'profile' | null;
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ isWalletConnected }) => {
+export const ProfilePage: React.FC = () => {
   const [selectedTab, setSelectedTab] = React.useState("overview");
+  const [editModal, setEditModal] = React.useState<EditModalState>({ isOpen: false, type: null });
+  const [bio, setBio] = React.useState("Building public goods for web3 | Full-stack developer | Open source contributor");
+  const [avatarSettings, setAvatarSettings] = React.useState<AvatarCustomization>({});
+  
+  const { address, isConnecting, isConnected } = useAccount();
+  const { data: ensName } = useEnsName({ address });
+  const { data: ensAvatar } = useEnsAvatar({ name: ensName });
+  const { data: balance } = useBalance({ address });
+  const { theme } = useTheme();
 
-  const mockUserData = {
-    name: "Alex Thompson",
-    handle: "0x1234...5678",
-    bio: "Building public goods for web3 | Full-stack developer | Open source contributor",
-    joinedDate: "May 2025",
-    points: 1250,
-    level: 3,
-    rank: "#125",
-    contributions: 28,
-    projects: [
-      { 
-        name: "EcoTracker", 
-        description: "Open-source carbon footprint tracking dApp",
-        status: "active",
-        contributors: 12,
-        points: 450
-      },
-      { 
-        name: "GiveWell DAO", 
-        description: "Decentralized effective altruism platform",
-        status: "completed",
-        contributors: 8,
-        points: 320
-      }
-    ],
-    domains: [
-      { name: "alex.youbuidl", status: "active", expiryDate: "2026-05-29" },
-      { name: "devs.givestation", status: "active", expiryDate: "2026-05-29" }
-    ],
-    transactions: [
-      { type: "contribute", project: "EcoTracker", date: "2025-05-28", points: 50 },
-      { type: "register", domain: "alex.youbuidl", date: "2025-05-27", price: "$25" },
-      { type: "milestone", project: "GiveWell DAO", date: "2025-05-26", points: 100 }
-    ],
-    badges: [
-      {
-        id: "builder-1",
-        name: "Master Builder",
-        icon: "lucide:tool",
-        type: "builder",
-        level: "gold",
-        description: "Contributed to 10+ public goods projects",
-        unlockedAt: "2025-04-15"
-      },
-      {
-        id: "dev-1",
-        name: "Code Wizard",
-        icon: "lucide:code",
-        type: "dev",
-        level: "silver",
-        description: "Merged 50+ pull requests",
-        unlockedAt: "2025-05-01"
-      },
-      {
-        id: "team-1",
-        name: "Team Leader",
-        icon: "lucide:users",
-        type: "team",
-        level: "bronze",
-        description: "Led a team of 5+ contributors",
-        unlockedAt: "2025-05-20"
-      },
-      {
-        id: "contributor-1",
-        name: "Early Contributor",
-        icon: "lucide:star",
-        type: "contributor",
-        level: "diamond",
-        description: "One of the first 100 contributors",
-        unlockedAt: "2025-03-10"
-      }
-    ] as Badge[]
-  };
-
-  const getBadgeColor = (level: Badge['level']) => {
-    switch (level) {
-      case 'bronze': return 'text-orange-400';
-      case 'silver': return 'text-gray-400';
-      case 'gold': return 'text-yellow-400';
-      case 'diamond': return 'text-blue-400';
+  // Handler for avatar customization
+  const handleAvatarCustomize = () => {
+    const newSettings: AvatarCustomization = {
+      ...avatarSettings,
+      seed: Math.random().toString(), // Generate new random avatar
+    };
+    setAvatarSettings(newSettings);
+    if (address) {
+      saveAvatarSettings(address, newSettings);
     }
   };
-  
+
+  // Handler for profile edit
+  const handleProfileEdit = (newBio: string) => {
+    setBio(newBio);
+    setEditModal({ isOpen: false, type: null });
+  };
+
+  // If wallet is not connected, show connect prompt
+  if (!isConnected) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[80vh] gap-4">
+        <Icon icon="lucide:wallet" className="w-16 h-16 text-default-300" />
+        <h2 className="text-xl font-bold text-default-600">Connect Your Wallet</h2>
+        <p className="text-default-400 text-center max-w-md">
+          Connect your wallet to view your profile, contributions, and builder stats.
+        </p>
+      </div>
+    );
+  }
+
+  // Loading state while fetching wallet data
+  if (isConnecting) {
+    return (
+      <div className="flex items-center justify-center h-[80vh]">
+        <Progress
+          size="sm"
+          isIndeterminate
+          aria-label="Loading..."
+          className="max-w-md"
+        />
+      </div>
+    );
+  }
+
+  const displayName = ensName || address;
+  const shortAddress = address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : '';
+
+  // Helper function to format the balance with appropriate decimal places
+  const formatBalance = () => {
+    if (!balance?.formatted) return '0.0000';
+    const num = Number(balance.formatted);
+    return num < 0.0001 ? '<0.0001' : num.toFixed(4);
+  };
+
+  // Example badges data (replace with actual data from your API/state)
+  const badges: Badge[] = [
+    { 
+      id: '1', 
+      name: 'Early Builder',
+      icon: 'lucide:hammer',
+      type: 'builder',
+      level: 'gold',
+      description: 'One of the first builders on the platform',
+      unlockedAt: '2024-01-01'
+    },
+    {
+      id: '2',
+      name: 'Code Contributor',
+      icon: 'lucide:git-pull-request',
+      type: 'dev',
+      level: 'silver',
+      description: 'Contributed to multiple open source projects',
+      unlockedAt: '2024-02-01'
+    }
+  ];
+
+  const getBadgeColor = (level: 'bronze' | 'silver' | 'gold' | 'diamond') => {
+    switch (level) {
+      case 'diamond': return {
+        base: "bg-blue-50 border-blue-500",
+        content: "text-blue-600",
+        dot: "bg-blue-500"
+      };
+      case 'gold': return {
+        base: "bg-yellow-50 border-yellow-500",
+        content: "text-yellow-600",
+        dot: "bg-yellow-500"
+      };
+      case 'silver': return {
+        base: "bg-gray-50 border-gray-500",
+        content: "text-gray-600",
+        dot: "bg-gray-500"
+      };
+      default: return {
+        base: "bg-amber-50 border-amber-500",
+        content: "text-amber-600",
+        dot: "bg-amber-500"
+      };
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background animate-in fade-in duration-300">
-      <div className="max-w-4xl mx-auto px-3 pb-16">
-        {/* Ultra Compact Header */}
-        <div className="flex items-center gap-3 py-3 border-b border-divider">
-          <div className="relative flex-shrink-0">
-            <Avatar
-              src="https://i.pravatar.cc/150?img=27"
-              className="w-12 h-12"
-              isBordered
-              color="primary"
-            />
-            {mockUserData.badges.some(b => b.level === 'diamond') && (
-              <div className="absolute -bottom-0.5 -right-0.5 bg-blue-400 text-white rounded-full p-0.5">
-                <Icon icon="lucide:diamond" width={10} height={10} />
+    <div className="w-full max-w-[1200px] mx-auto px-4 overflow-y-auto max-h-[calc(100vh-3rem)]">
+      {/* Profile Header */}
+      <Card className="w-full mb-6">
+        <CardBody className="p-0">
+          {/* Cover Image */}
+          <div className="h-32 md:h-48 bg-gradient-to-r from-[#CDEB63]/20 to-[#CDEB63]/10 relative">
+            <Button
+              isIconOnly
+              className="absolute top-4 right-4 bg-background/50 backdrop-blur-md"
+              variant="light"
+              size="sm"
+              onPress={() => setEditModal({ isOpen: true, type: 'profile' })}
+            >
+              <Icon icon="lucide:edit" width={14} />
+            </Button>
+          </div>
+
+          {/* Profile Info */}
+          <div className="px-4 pb-4 md:px-6 md:pb-6">
+            <div className="flex flex-col md:flex-row gap-4 items-start relative">
+              {/* Avatar */}
+              <div className="relative -mt-12 md:-mt-16">
+                <Avatar
+                  src={getAvatarUrl(ensAvatar, address || '', theme as 'light' | 'dark')}
+                  className="w-24 h-24 md:w-32 md:h-32 ring-4 ring-background"
+                  alt={displayName}
+                />
+                <Button
+                  isIconOnly
+                  className="absolute bottom-0 right-0 bg-background shadow-lg"
+                  variant="light"
+                  size="sm"
+                  onPress={() => setEditModal({ isOpen: true, type: 'avatar' })}
+                >
+                  <Icon icon="lucide:edit-3" width={14} />
+                </Button>
+              </div>
+
+              {/* Profile Details */}
+              <div className="flex-1 space-y-3">
+                <div>
+                  <h1 className="text-2xl font-bold">{displayName}</h1>
+                  <p className="text-default-400">{shortAddress}</p>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Wallet Balance */}
+                  <Chip
+                    size="sm"
+                    variant="dot"
+                    classNames={{
+                      base: "bg-success-50 border-success-500",
+                      content: "text-success-600 text-small font-medium",
+                      dot: "bg-success-500"
+                    }}
+                    startContent={
+                      <div className="flex items-center gap-1">
+                        <Icon icon="lucide:wallet" width={12} />
+                        <span>
+                          {formatBalance()} {balance?.symbol || 'ETH'}
+                        </span>
+                      </div>
+                    }
+                  />
+
+                  {/* Active Badges */}
+                  {badges.slice(0, 3).map((badge) => (
+                    <Chip
+                      key={badge.id}
+                      size="sm"
+                      variant="dot"
+                      classNames={{
+                        base: getBadgeColor(badge.level).base,
+                        content: getBadgeColor(badge.level).content,
+                        dot: getBadgeColor(badge.level).dot,
+                      }}
+                      startContent={
+                        <div className="flex items-center gap-1">
+                          <Icon icon={badge.icon} width={12} />
+                          <span>{badge.name}</span>
+                        </div>
+                      }
+                    />
+                  ))}
+                </div>
+
+                {/* Bio */}
+                <p className="text-sm text-default-500 max-w-2xl">
+                  {bio}
+                </p>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  <StatCard
+                    label="Experience"
+                    value="1,250"
+                    icon="lucide:star"
+                  />
+                  <StatCard
+                    label="Contributions"
+                    value="28"
+                    icon="lucide:git-merge"
+                  />
+                  <StatCard
+                    label="Projects"
+                    value="4"
+                    icon="lucide:folder"
+                  />
+                  <StatCard
+                    label="Reputation"
+                    value="#125"
+                    icon="lucide:award"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Edit Modals */}
+      <Modal 
+        isOpen={editModal.isOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setEditModal({ isOpen: false, type: null });
+        }}
+        placement="center"
+        backdrop="blur"
+      >
+        <ModalContent>
+          <div className="p-6 space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">
+                {editModal.type === 'avatar' ? 'Customize Avatar' : 'Edit Profile'}
+              </h3>
+              <Button
+                isIconOnly
+                variant="light"
+                size="sm"
+                onPress={() => setEditModal({ isOpen: false, type: null })}
+              >
+                <Icon icon="lucide:x" width={16} />
+              </Button>
+            </div>
+
+            {editModal.type === 'avatar' ? (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <Avatar
+                    src={generateAvatar(address || '', theme as 'light' | 'dark', avatarSettings)}
+                    className="w-32 h-32"
+                    alt="Preview"
+                  />
+                </div>
+                <div className="flex justify-center gap-2">
+                  <Button
+                    variant="flat"
+                    color="primary"
+                    onPress={handleAvatarCustomize}
+                    startContent={<Icon icon="lucide:refresh-cw" width={16} />}
+                  >
+                    Generate New
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <Textarea
+                  label="Bio"
+                  placeholder="Tell us about yourself..."
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  className="w-full"
+                />
               </div>
             )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <div className="truncate">
-                <h1 className="text-base font-bold truncate">{mockUserData.name}</h1>
-                <div className="flex items-center gap-1.5 text-default-500">
-                  <span className="text-xs truncate">{mockUserData.handle}</span>
-                  <Chip size="sm" variant="flat" color="primary" className="h-4 px-1 text-[10px]">
-                    Lvl {mockUserData.level}
-                  </Chip>
-                </div>
-              </div>
-              {isWalletConnected ? (
-                <Button size="sm" isIconOnly variant="light" className="min-w-unit-6 w-6 h-6">
-                  <Icon icon="lucide:edit" width={14} height={14} />
-                </Button>
-              ) : (
-                <Button size="sm" color="primary" className="h-7 px-2 text-xs">
-                  <Icon icon="lucide:wallet" width={12} height={12} className="mr-1" />
-                  Connect
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* Inline Stats + Progress */}
-        <div className="py-2 border-b border-divider">
-          <div className="grid grid-cols-4 gap-1 mb-2">
-            <div className="text-center">
-              <div className="text-sm font-semibold text-primary">{mockUserData.points}</div>
-              <div className="text-[10px] text-default-500">Points</div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm font-semibold">{mockUserData.rank}</div>
-              <div className="text-[10px] text-default-500">Rank</div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm font-semibold">{mockUserData.contributions}</div>
-              <div className="text-[10px] text-default-500">Contrib.</div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm font-semibold">{mockUserData.projects.length}</div>
-              <div className="text-[10px] text-default-500">Projects</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Progress 
-              value={(mockUserData.points % 1500) / 1500 * 100} 
-              color="primary" 
-              size="sm"
-              className="flex-1 h-1"
-            />
-            <span className="text-[10px] text-primary whitespace-nowrap">
-              {mockUserData.points}/1500
-            </span>
-          </div>
-        </div>
-
-        {/* Compact Badges Scroll */}
-        <div className="py-2 border-b border-divider">
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-            {mockUserData.badges.map((badge) => (
-              <div
-                key={badge.id}
-                className="flex-none bg-content1 rounded-md p-1.5 border border-divider min-w-[90px]"
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="light"
+                onPress={() => setEditModal({ isOpen: false, type: null })}
               >
-                <div className="flex items-center gap-1.5">
-                  <div className={`p-1 rounded-md bg-content2 ${getBadgeColor(badge.level)}`}>
-                    <Icon icon={badge.icon} width={12} height={12} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-medium truncate">{badge.name}</div>
-                    <div className="text-[9px] text-default-500 capitalize">{badge.type}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Compact Tabs */}
-        <Tabs 
-          selectedKey={selectedTab}
-          onSelectionChange={(key) => setSelectedTab(key.toString())}
-          variant="underlined"
-          classNames={{
-            base: "w-full",
-            tabList: "gap-1 w-full relative rounded-none p-0 border-b border-divider h-9",
-            cursor: "w-full",
-            tab: "h-9 px-2 data-[selected=true]:font-medium",
-            tabContent: "text-xs group-data-[selected=true]:text-primary"
-          }}
-        >
-          <Tab 
-            key="overview" 
-            title={
-              <div className="flex items-center gap-1.5">
-                <Icon icon="lucide:layout-dashboard" width={14} height={14} />
-                <span>Overview</span>
-              </div>
-            }
-          />
-          <Tab 
-            key="projects" 
-            title={
-              <div className="flex items-center gap-1.5">
-                <Icon icon="lucide:folder" width={14} height={14} />
-                <span>Projects</span>
-              </div>
-            }
-          />
-          <Tab 
-            key="activity" 
-            title={
-              <div className="flex items-center gap-1.5">
-                <Icon icon="lucide:activity" width={14} height={14} />
-                <span>Activity</span>
-              </div>
-            }
-          />
-        </Tabs>
-
-        {/* Tab Content */}
-        <div className="py-2 space-y-2">
-          {selectedTab === "overview" && (
-            <div className="grid grid-cols-1 gap-2">
-              {/* Active Projects Card */}
-              <Card className="border border-divider">
-                <CardBody className="p-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs font-medium">Active Projects</h3>
-                    <Button size="sm" variant="light" className="min-w-unit-12 h-6 text-xs">
-                      View All
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    {mockUserData.projects.map((project, idx) => (
-                      <div key={idx} className="flex items-center justify-between gap-2 py-0.5">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <Icon 
-                              icon={project.status === 'active' ? 'lucide:git-branch' : 'lucide:check'} 
-                              className={project.status === 'active' ? 'text-primary' : 'text-success'}
-                              width={12} 
-                              height={12} 
-                            />
-                            <span className="text-xs font-medium truncate">{project.name}</span>
-                          </div>
-                          <p className="text-[10px] text-default-500 truncate">{project.description}</p>
-                        </div>
-                        <Chip 
-                          size="sm" 
-                          variant="flat"
-                          color={project.status === 'active' ? 'primary' : 'success'}
-                          className="h-4 px-1 text-[10px]"
-                        >
-                          {project.points} XP
-                        </Chip>
-                      </div>
-                    ))}
-                  </div>
-                </CardBody>
-              </Card>
-
-              {/* Recent Activity Card */}
-              <Card className="border border-divider">
-                <CardBody className="p-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs font-medium">Recent Activity</h3>
-                    <Button size="sm" variant="light" className="min-w-unit-12 h-6 text-xs">
-                      View All
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    {mockUserData.transactions.slice(0, 3).map((tx, idx) => (
-                      <div key={idx} className="flex items-center gap-2 py-0.5">
-                        <div className="p-1 rounded-full bg-primary/10">
-                          <Icon 
-                            icon={tx.type === 'contribute' ? 'lucide:git-pull-request' : 
-                                 tx.type === 'milestone' ? 'lucide:target' : 'lucide:check-circle'} 
-                            className="text-primary"
-                            width={12} 
-                            height={12} 
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium truncate">
-                            {tx.type === 'register' ? tx.domain : tx.project}
-                          </div>
-                          <div className="text-[10px] text-default-500">{tx.date}</div>
-                        </div>
-                        <div className="text-[10px] font-medium text-primary whitespace-nowrap">
-                          {tx.points ? `+${tx.points} XP` : tx.price}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardBody>
-              </Card>
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                onPress={() => {
+                  if (editModal.type === 'profile') {
+                    handleProfileEdit(bio);
+                  } else {
+                    setEditModal({ isOpen: false, type: null });
+                  }
+                }}
+              >
+                Save
+              </Button>
             </div>
-          )}
+          </div>
+        </ModalContent>
+      </Modal>
 
-          {/* Badges Tab */}
-          {selectedTab === "badges" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {mockUserData.badges.map((badge) => (
-                <Card key={badge.id} className="border border-divider">
-                  <CardBody className="p-3">
-                    <div className="flex items-start gap-3">
-                      <div className={`p-3 rounded-xl bg-content2 ${getBadgeColor(badge.level)}`}>
-                        <Icon icon={badge.icon} className="text-2xl" />
+      {/* Tabs Navigation */}
+      <Tabs 
+        selectedKey={selectedTab}
+        onSelectionChange={setSelectedTab as any}
+        className="w-full"
+        variant="underlined"
+        size="lg"
+      >
+        <Tab
+          key="overview"
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="lucide:layout-dashboard" width={16} />
+              <span>Overview</span>
+            </div>
+          }
+        >
+          <div className="grid md:grid-cols-2 gap-6 py-4">
+            {/* Active Projects */}
+            <Card>
+              <CardBody>
+                <h3 className="text-lg font-semibold mb-4">Active Projects</h3>
+                <div className="space-y-4">
+                  {[1, 2].map((_, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Icon icon="lucide:boxes" className="text-primary" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{badge.name}</h3>
-                          <Chip 
-                            size="sm" 
-                            variant="flat" 
-                            className={getBadgeColor(badge.level)}
-                          >
-                            {badge.level}
-                          </Chip>
-                        </div>
-                        <p className="text-sm text-default-500 mt-1">{badge.description}</p>
-                        <div className="text-xs text-default-400 mt-2">
-                          Unlocked on {new Date(badge.unlockedAt).toLocaleDateString()}
+                      <div className="flex-1">
+                        <h4 className="font-medium">Project Name</h4>
+                        <p className="text-sm text-default-400">Description of the project goes here</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Chip size="sm" variant="flat">Active</Chip>
+                          <span className="text-xs text-default-400">Updated 2h ago</span>
                         </div>
                       </div>
                     </div>
-                  </CardBody>
-                </Card>
-              ))}
-            </div>
-          )}
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
 
-          {/* Projects Tab */}
-          {selectedTab === "projects" && (
-            <div className="space-y-4">
-              {mockUserData.projects.map((project) => (
-                <Card key={project.name} className="border border-divider">
-                  <CardBody className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h3 className="font-semibold">{project.name}</h3>
-                        <p className="text-sm text-default-500">
-                          {project.description}
-                        </p>
+            {/* Recent Activity */}
+            <Card>
+              <CardBody>
+                <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((_, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center">
+                        <Icon icon="lucide:git-commit" className="text-success" width={14} />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Chip 
-                          size="sm" 
-                          color={project.status === 'active' ? 'success' : 'primary'}
-                        >
-                          {project.status}
-                        </Chip>
-                        <Button
+                      <div className="flex-1">
+                        <p className="text-sm">
+                          <span className="font-medium">Contributed</span> to Project Name
+                        </p>
+                        <span className="text-xs text-default-400">2 hours ago</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        </Tab>
+        <Tab
+          key="contributions"
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="lucide:git-merge" width={16} />
+              <span>Contributions</span>
+            </div>
+          }
+        >
+          {/* Contributions content */}
+        </Tab>
+        <Tab
+          key="projects"
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="lucide:folder" width={16} />
+              <span>Projects</span>
+            </div>
+          }
+        >
+          {/* Projects content */}
+        </Tab>
+        <Tab
+          key="badges"
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="lucide:medal" width={16} />
+              <span>Badges</span>
+            </div>
+          }
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+            {badges.map((badge) => (
+              <Card key={badge.id} className="border border-divider">
+                <CardBody className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getBadgeColor(badge.level).base}`}>
+                      <Icon icon={badge.icon} className={getBadgeColor(badge.level).content} width={20} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">{badge.name}</h4>
+                        <Chip
                           size="sm"
                           variant="flat"
-                          disabled={!isWalletConnected}
+                          classNames={{
+                            base: getBadgeColor(badge.level).base,
+                            content: getBadgeColor(badge.level).content
+                          }}
                         >
-                          {project.status === 'active' ? 'View' : 'Coming Soon'}
-                        </Button>
+                          {badge.level}
+                        </Chip>
+                      </div>
+                      <p className="text-sm text-default-400 mt-1">{badge.description}</p>
+                      <div className="flex items-center gap-1 mt-2">
+                        <Icon icon="lucide:clock" className="text-default-400" width={12} />
+                        <span className="text-xs text-default-400">
+                          Unlocked {new Date(badge.unlockedAt).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
-                    <div className="mt-2">
-                      <div className="flex items-center justify-between text-xs text-default-500">
-                        <span>{project.contributors} contributors</span>
-                        <span>{project.points} XP</span>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-              ))}
-              {!isWalletConnected && (
-                <Card className="border border-divider bg-primary/5">
-                  <CardBody className="p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="text-sm text-default-500">Connect wallet to manage projects</p>
-                      <Button 
-                        color="primary"
-                        size="sm"
-                        startContent={<Icon icon="lucide:wallet" width={16} height={16} />}
-                      >
-                        Connect Wallet
-                      </Button>
-                    </div>
-                  </CardBody>
-                </Card>
-              )}
-            </div>
-          )}
-
-          {/* Activity Tab */}
-          {selectedTab === "activity" && (
-            <div className="space-y-4">
-              {mockUserData.transactions.map((tx) => (
-                <Card key={tx.domain} className="border border-divider">
-                  <CardBody className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Icon 
-                            icon={tx.type === 'register' ? 'lucide:check-circle' : 'lucide:send'} 
-                            className={tx.type === 'register' ? 'text-success' : 'text-primary'}
-                            width={16} 
-                            height={16} 
-                          />
-                          <h3 className="font-semibold">{tx.domain}</h3>
-                        </div>
-                        <p className="text-sm text-default-500">{tx.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold">{tx.points ? `+${tx.points} XP` : tx.price}</div>
-                        <div className="text-sm text-default-500">{tx.type === 'register' ? 'Registration' : 'Offer Made'}</div>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-              ))}
-              {!isWalletConnected && (
-                <Card className="border border-divider bg-primary/5">
-                  <CardBody className="p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="text-sm text-default-500">Connect wallet to view your activity</p>
-                      <Button 
-                        color="primary"
-                        size="sm"
-                        startContent={<Icon icon="lucide:wallet" width={16} height={16} />}
-                      >
-                        Connect Wallet
-                      </Button>
-                    </div>
-                  </CardBody>
-                </Card>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
+          </div>
+        </Tab>
+      </Tabs>
     </div>
   );
 };

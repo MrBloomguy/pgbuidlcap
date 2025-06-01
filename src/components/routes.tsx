@@ -9,12 +9,8 @@ import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { TimeFilter } from "./time-filter";
 
-interface RoutesProps {
-  isWalletConnected: boolean;
-}
-
-export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }): JSX.Element => {
-  const [currentRoute, setCurrentRoute] = React.useState("home");
+export const Routes: React.FC = () => {
+  const [currentRoute, setCurrentRoute] = React.useState("explore");
   const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<"grid" | "table">("table");
   const [selectedTimeFilter, setSelectedTimeFilter] = React.useState("24H");
@@ -33,8 +29,7 @@ export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }): JSX.Elemen
     };
   }, []);
 
-  // Reusable component for view controls
-  const ViewControls = (): JSX.Element => (
+  const ViewControls = () => (
     <div className="flex items-center justify-between">
       <TimeFilter
         selectedFilter={selectedTimeFilter}
@@ -47,101 +42,50 @@ export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }): JSX.Elemen
           size="sm"
           variant={viewMode === "table" ? "solid" : "flat"}
           className={viewMode === "table" ? "bg-[#CDEB63] text-black hover:bg-[#CDEB63]/90" : "hover:bg-[#CDEB63]/10"}
-          onPress={() => setViewMode("table")}
+          onClick={() => setViewMode("table")}
         >
-          <Icon icon="lucide:list" width={16} height={16} className={viewMode === "table" ? "text-black" : "text-[#CDEB63]"} />
+          <Icon icon="lucide:table" width={14} height={14} />
         </Button>
         <Button
           isIconOnly
           size="sm"
           variant={viewMode === "grid" ? "solid" : "flat"}
           className={viewMode === "grid" ? "bg-[#CDEB63] text-black hover:bg-[#CDEB63]/90" : "hover:bg-[#CDEB63]/10"}
-          onPress={() => setViewMode("grid")}
+          onClick={() => setViewMode("grid")}
         >
-          <Icon icon="lucide:grid" width={16} height={16} className={viewMode === "grid" ? "text-black" : "text-[#CDEB63]"} />
+          <Icon icon="lucide:grid" width={14} height={14} />
         </Button>
       </div>
     </div>
   );
 
-  const renderContent = () => {
-    switch (currentRoute) {
-      case "home":
-      case "explore":
-        return (
-          <div className="space-y-4 animate-in fade-in duration-150">
-            <MarketStats />
-            <ViewControls />
-            <TokenList 
-              viewMode={viewMode} 
-              onSelectToken={(tokenId) => {
-                setSelectedToken(tokenId);
-                setCurrentRoute("token");
-              }}
-            />
-          </div>
-        );
-
-      case "search":
-        return (
-          <div className="animate-in fade-in duration-150">
-            <ViewControls />
-            <TokenList 
-              viewMode={viewMode}
-              onSelectToken={(tokenId) => {
-                setSelectedToken(tokenId);
-                setCurrentRoute("token");
-              }}
-            />
-          </div>
-        );
-
-      case "domains":
-        return (
-          <div className="animate-in fade-in duration-150">
-            <DomainPage 
-              isWalletConnected={isWalletConnected}
-              onBack={() => setCurrentRoute("home")}
-            />
-          </div>
-        );
-
-      case "leaderboard":
-        return (
-          <div className="animate-in fade-in duration-150">
-            <Leaderboard 
-              onBack={() => setCurrentRoute("home")}
-              onSelectToken={(tokenId) => {
-                setSelectedToken(tokenId);
-                setCurrentRoute("token");
-              }}
-            />
-          </div>
-        );
-
-      case "profile":
-        return (
-          <div className="animate-in fade-in duration-150">
-            <ProfilePage isWalletConnected={isWalletConnected} />
-          </div>
-        );
-
-      case "token":
-        return selectedToken ? (
-          <TokenDetail
-            tokenId={selectedToken}
-            onBack={() => setCurrentRoute("home")}
-          />
-        ) : null;
-
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="w-full">
-      {renderContent()}
-    </div>
+    <>
+      {selectedToken ? (
+        <TokenDetail tokenId={selectedToken} onBack={() => setSelectedToken(null)} />
+      ) : (
+        <>
+          {currentRoute === "explore" && (
+            <div className="space-y-4">
+              <MarketStats />
+              <ViewControls />
+              <TokenList 
+                viewMode={viewMode} 
+                onTokenSelect={setSelectedToken}
+                selectedTimeFilter={selectedTimeFilter}
+              />
+            </div>
+          )}
+          {currentRoute === "profile" && <ProfilePage />}
+          {currentRoute === "leaderboard" && (
+            <Leaderboard 
+              onBack={() => setCurrentRoute("explore")}
+              onSelectToken={setSelectedToken}
+            />
+          )}
+          {currentRoute === "domains" && <DomainPage />}
+        </>
+      )}
+    </>
   );
 };

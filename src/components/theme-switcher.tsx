@@ -1,38 +1,35 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
-import { Switch, Tooltip } from '@heroui/react';
+import { Switch } from '@heroui/react';
 import { useTheme } from "@heroui/use-theme";
 
 export const ThemeSwitcher = () => {
   const { theme, setTheme } = useTheme();
-  const isDark = theme === "dark";
-  
-  const handleToggle = () => {
-    const newTheme = isDark ? "light" : "dark";
-    setTheme(newTheme);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
     
-    // Update HTML class for proper theme application
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
-    
-    // Save theme preference
-    localStorage.setItem('theme', newTheme);
+    // Save the theme preference
+    try {
+      localStorage.setItem('theme-preference', nextTheme);
+    } catch (e) {
+      console.error('Failed to save theme preference:', e);
+    }
   };
-  
+
   return (
-    <Tooltip 
-      content={`Switch to ${isDark ? "light" : "dark"} mode`}
-      placement="bottom"
+    <button
+      onClick={toggleTheme}
+      className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-default-100"
+      aria-label="Toggle theme"
     >
-      <button 
-        onClick={handleToggle}
-        className="p-2 hover:bg-default-100 rounded-full transition-colors"
-      >
-        <Icon 
-          icon={isDark ? "lucide:sun" : "lucide:moon"} 
-          className={isDark ? "text-warning-500" : "text-secondary-500"} 
-          size={16} 
-        />
-      </button>
-    </Tooltip>
+      <Icon
+        icon={theme === 'light' ? 'lucide:moon' : 'lucide:sun'}
+        className={theme === 'light' ? 'text-default-500' : 'text-default-400'}
+        width={18}
+        height={18}
+      />
+    </button>
   );
 };

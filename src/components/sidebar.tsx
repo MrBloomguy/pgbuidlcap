@@ -156,6 +156,50 @@ export const Sidebar = ({
 	const [isLoadingMore, setIsLoadingMore] = React.useState(false);
 	const [searchQuery, setSearchQuery] = React.useState("");
 	const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+	const [activeRoute, setActiveRoute] = React.useState("explore");
+	const [isMobile, setIsMobile] = React.useState(window.innerWidth < 768);
+
+	React.useEffect(() => {
+		const handleResize = () => {
+			setIsMobile(window.innerWidth < 768);
+		};
+
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, []);
+
+	const pagesList = [
+		{
+			path: "/explore",
+			icon: "lucide:compass",
+			label: "Explore",
+			key: "explore",
+		},
+		{
+			path: "/search",
+			icon: "lucide:search",
+			label: "Search",
+			key: "search",
+		},
+		{
+			path: "/domains",
+			icon: "lucide:grid",
+			label: "Domains",
+			key: "domains",
+		},
+		{
+			path: "/leaderboard",
+			icon: "lucide:trophy",
+			label: "Leaderboard",
+			key: "leaderboard",
+		},
+		{
+			path: "/profile",
+			icon: "lucide:user",
+			label: "Profile",
+			key: "profile",
+		},
+	];
 
 	const loadMoreNetworks = () => {
 		setIsLoadingMore(true);
@@ -252,93 +296,145 @@ export const Sidebar = ({
 		);
 	};
 
+	const PagesSection = () => {
+		return (
+			<div className="space-y-1">
+				{pagesList.map((page) => (
+					<Button
+						key={page.key}
+						variant="light"
+						className={`w-full justify-start text-sm h-8 px-2 hover:bg-default-100 mb-[2px] ${
+							activeRoute === page.key ? "bg-primary/10 text-primary" : "text-default-500"
+						}`}
+						onClick={() => {
+							setActiveRoute(page.key);
+							handleNavigation(page.key);
+							if (window.innerWidth < 768) {
+								onClose();
+							}
+						}}
+						startContent={
+							<Icon
+								icon={page.icon}
+								width={18}
+								height={18}
+							/>
+						}
+					>
+						{page.label}
+					</Button>
+				))}
+			</div>
+		);
+	};
+
 	return (
-		<aside
-			className={`w-48 bg-content1 border-r border-divider h-full overflow-y-auto flex flex-col transition-all duration-300 ${
-				isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-			}`}
-		>
-
-			{/* Networks Section */}
-			<div className="p-3">
-				<div className="flex items-center justify-between mb-3">
-					<h2 className="text-xs font-bold tracking-wide text-default-700">
-						PUBLIC GOODS
-					</h2>
-					<div className="flex gap-1">
-						<Button
-							isIconOnly
-							size="sm"
-							variant="light"
-							aria-label="Search"
-							className="h-6 w-6 min-w-6"
-							onClick={() => setIsSearchOpen(!isSearchOpen)}
-						>
-							<Icon
-								icon="lucide:search"
-								className="text-default-500"
-								width={12}
-								height={12}
-							/>
-						</Button>
-						<Button
-							isIconOnly
-							size="sm"
-							variant="light"
-							aria-label="Expand"
-							className="h-6 w-6 min-w-6"
-						>
-							<Icon
-								icon="lucide:chevron-down"
-								className="text-default-500"
-								width={12}
-								height={12}
-							/>
-						</Button>
+		<>
+			{/* Backdrop overlay on mobile */}
+			{isOpen && (
+				<div 
+					className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+					onClick={onClose}
+				/>
+			)}
+			
+			<aside
+				className={`fixed md:relative w-64 md:w-48 bg-background border-r border-divider h-full overflow-y-auto flex flex-col transition-all duration-300 z-50 ${
+					isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+				}`}
+			>
+				{/* Pages Section - Only shown on desktop */}
+				{!isMobile && (
+					<div className="p-2 border-b border-divider">
+						<div className="flex items-center justify-between mb-2">
+							<h2 className="text-xs font-bold tracking-wide text-default-700">
+								PAGES
+							</h2>
+						</div>
+						<PagesSection />
 					</div>
+				)}
+
+				{/* Networks Section */}
+				<div className={`p-2 ${!isMobile ? 'border-t border-divider' : ''}`}>
+					<div className="flex items-center justify-between mb-2">
+						<h2 className="text-xs font-bold tracking-wide text-default-700">
+							PUBLIC GOODS
+						</h2>
+						<div className="flex gap-1">
+							<Button
+								isIconOnly
+								size="sm"
+								variant="light"
+								aria-label="Search"
+								className="h-6 w-6 min-w-6"
+								onClick={() => setIsSearchOpen(!isSearchOpen)}
+							>
+								<Icon
+									icon="lucide:search"
+									className="text-default-500"
+									width={12}
+									height={12}
+								/>
+							</Button>
+							<Button
+								isIconOnly
+								size="sm"
+								variant="light"
+								aria-label="Expand"
+								className="h-6 w-6 min-w-6"
+							>
+								<Icon
+									icon="lucide:chevron-down"
+									className="text-default-500"
+									width={12}
+									height={12}
+								/>
+							</Button>
+						</div>
+					</div>
+					<NetworksSection />
 				</div>
 
-				<NetworksSection />
-			</div>
-
-			{/* Footer Section */}
-			<div className="mt-auto p-2 border-t border-divider">
-				<div className="space-y-2">
-					<div className="flex items-center justify-between">
-						<span className="text-xs text-default-500">YouBuidl</span>
-						<span className="text-xs text-default-400">v1.0.0</span>
-					</div>
-					<div className="flex items-center gap-2">
-						<Button isIconOnly size="sm" variant="light" aria-label="Help">
-							<Icon
-								icon="lucide:help-circle"
-								className="text-default-500"
-								width={14}
-								height={14}
-							/>
-						</Button>
-						<Button isIconOnly size="sm" variant="light" aria-label="GitHub">
-							<Icon
-								icon="lucide:github"
-								className="text-default-500"
-								width={14}
-								height={14}
-							/>
-						</Button>
-						<Button isIconOnly size="sm" variant="light" aria-label="Discord">
-							<Icon
-								icon="lucide:message-circle"
-								className="text-default-500"
-								width={14}
-								height={14}
-							/>
-						</Button>
-					</div>
-					<div className="text-xs text-default-400 text-center">
-						© 2025 YouBuidl
+				{/* Footer Section */}
+				<div className="mt-auto p-2 border-t border-divider">
+					<div className="space-y-2">
+						<div className="flex items-center justify-between">
+							<span className="text-xs text-default-500">YouBuidl</span>
+							<span className="text-xs text-default-400">v1.0.0</span>
+						</div>
+						<div className="flex items-center gap-2">
+							<Button isIconOnly size="sm" variant="light" aria-label="Help">
+								<Icon
+									icon="lucide:help-circle"
+									className="text-default-500"
+									width={14}
+									height={14}
+								/>
+							</Button>
+							<Button isIconOnly size="sm" variant="light" aria-label="GitHub">
+								<Icon
+									icon="lucide:github"
+								 className="text-default-500"
+									width={14}
+									height={14}
+								/>
+							</Button>
+							<Button isIconOnly size="sm" variant="light" aria-label="Discord">
+								<Icon
+									icon="lucide:message-circle"
+									className="text-default-500"
+									width={14}
+									height={14}
+								/>
+							</Button>
+						</div>
+						<div className="text-xs text-default-400 text-center">
+							© 2025 YouBuidl
+						</div>
 					</div>
 				</div>
-			</div>
-		</aside>
+			</aside>
+		</>
 	);
 };

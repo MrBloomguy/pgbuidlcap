@@ -44,7 +44,8 @@ const sampleComments = {
 
 interface TokenListProps {
   viewMode: "grid" | "table";
-  onSelectToken: (tokenId: string) => void;
+  selectedTimeFilter: string;
+  onTokenSelect: (tokenId: string) => void;
 }
 
 interface Comment {
@@ -98,7 +99,8 @@ const CommentThread: React.FC<{ comment: Comment }> = ({ comment }) => {
 
 export const TokenList: React.FC<TokenListProps> = ({
   viewMode,
-  onSelectToken,
+  selectedTimeFilter,
+  onTokenSelect
 }) => {
   const [expandedCommentId, setExpandedCommentId] = React.useState<string | null>(null);
   const [commentText, setCommentText] = React.useState("");
@@ -196,7 +198,7 @@ export const TokenList: React.FC<TokenListProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
                       <button 
-                        onClick={() => onSelectToken(token.id)}
+                        onClick={() => onTokenSelect(token.id)}
                         className="font-semibold text-sm hover:text-[#CDEB63] transition-colors"
                       >
                         {token.symbol}
@@ -363,7 +365,7 @@ export const TokenList: React.FC<TokenListProps> = ({
           removeWrapper
           className="min-w-full compact-table relative flex-1"
           selectionMode="single"
-          onRowAction={onSelectToken}
+          onRowAction={onTokenSelect}
         >
           <TableHeader>
             <TableColumn className="text-xs sticky-token-column">TOKEN</TableColumn>

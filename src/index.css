@@ -4,6 +4,44 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+@layer base {
+  :root {
+    --background: 255 255 255;
+    --foreground: 17 24 28;
+    
+    --content1: 255 255 255;
+    --content2: 244 244 245;
+    
+    --divider: 228 228 231;
+    --primary: 205 235 99;
+    --primary-foreground: 0 0 0;
+  }
+
+  .dark {
+    --background: 9 9 11;
+    --foreground: 255 255 255;
+    
+    --content1: 24 24 27;
+    --content2: 39 39 42;
+    
+    --divider: 39 39 42;
+    --primary: 205 235 99;
+    --primary-foreground: 0 0 0;
+  }
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+.dark body {
+  color-scheme: dark;
+}
+
+* {
+  border-color: rgb(var(--divider));
+}
+
 :root {
   --framer-font-family: "SF Pro Rounded Medium", "-apple-system", "BlinkMacSystemFont", sans-serif;
   --framer-font-family-bold: "SF Pro Rounded", "-apple-system", "BlinkMacSystemFont", sans-serif;
