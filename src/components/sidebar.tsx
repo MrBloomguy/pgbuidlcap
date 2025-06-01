@@ -301,65 +301,6 @@ export const Sidebar = ({
 				<NetworksSection />
 			</div>
 
-			<Divider />
-
-			{/* Pages Section */}
-			<div className="p-3">
-				<div className="flex items-left justify-between mb-3">
-					<h2 className="text-xs font-bold tracking-wide text-default-700">
-						PAGES
-					</h2>
-					<Button
-						isIconOnly
-						size="sm"
-						variant="light"
-						aria-label="Expand"
-						className="h-6 w-6 min-w-6"
-					>
-						<Icon
-							icon="lucide:chevron-down"
-							className="text-default-500"
-							width={12}
-							height={12}
-						/>
-					</Button>
-				</div>
-
-				<div className="space-y-1">
-					{[
-						{ icon: "lucide:home", label: "Home", route: "home" },
-						{ icon: "lucide:compass", label: "Explore", route: "explore" },
-						{ icon: "lucide:trending-up", label: "Markets", route: "markets" },
-						{ icon: "lucide:grid", label: "Domains", route: "domains" },
-						{ icon: "lucide:user", label: "Profile", route: "profile" },
-						{
-							icon: "lucide:bar-chart",
-							label: "Leaderboard",
-							route: "leaderboard",
-						},
-					].map((item, index) => (
-						<Button
-							key={index}
-							variant="light"
-							className="w-full justify-start text-xs h-8 py-1 px-2 hover:bg-default-100"
-							onPress={() => handleNavigation(item.route)}
-							startContent={
-								<div className="flex items-center justify-center w-5 h-5">
-									<Icon
-										icon={item.icon}
-										width={16}
-										height={16}
-										className="text-default-600"
-									/>
-								</div>
-							}
-						>
-							<span className="ml-1 truncate">{item.label}</span>
-						</Button>
-					))}
-				</div>
-			</div>
-
 			{/* Footer Section */}
 			<div className="mt-auto p-2 border-t border-divider">
 				<div className="space-y-2">

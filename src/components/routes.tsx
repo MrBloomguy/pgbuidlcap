@@ -13,10 +13,10 @@ interface RoutesProps {
   isWalletConnected: boolean;
 }
 
-export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }) => {
+export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }): JSX.Element => {
   const [currentRoute, setCurrentRoute] = React.useState("home");
   const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
-  const [viewMode, setViewMode] = React.useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = React.useState<"grid" | "table">("table");
   const [selectedTimeFilter, setSelectedTimeFilter] = React.useState("24H");
 
   // Listen for mobile navigation changes
@@ -33,38 +33,45 @@ export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }) => {
     };
   }, []);
 
+  // Reusable component for view controls
+  const ViewControls = (): JSX.Element => (
+    <div className="flex items-center justify-between">
+      <TimeFilter
+        selectedFilter={selectedTimeFilter}
+        onFilterChange={setSelectedTimeFilter}
+        color="default"
+      />
+      <div className="flex gap-2">
+        <Button
+          isIconOnly
+          size="sm"
+          variant={viewMode === "table" ? "solid" : "flat"}
+          className={viewMode === "table" ? "bg-[#CDEB63] text-black hover:bg-[#CDEB63]/90" : "hover:bg-[#CDEB63]/10"}
+          onPress={() => setViewMode("table")}
+        >
+          <Icon icon="lucide:list" width={16} height={16} className={viewMode === "table" ? "text-black" : "text-[#CDEB63]"} />
+        </Button>
+        <Button
+          isIconOnly
+          size="sm"
+          variant={viewMode === "grid" ? "solid" : "flat"}
+          className={viewMode === "grid" ? "bg-[#CDEB63] text-black hover:bg-[#CDEB63]/90" : "hover:bg-[#CDEB63]/10"}
+          onPress={() => setViewMode("grid")}
+        >
+          <Icon icon="lucide:grid" width={16} height={16} className={viewMode === "grid" ? "text-black" : "text-[#CDEB63]"} />
+        </Button>
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
     switch (currentRoute) {
       case "home":
+      case "explore":
         return (
-          <div className="space-y-4 animate-in fade-in duration-300">
+          <div className="space-y-4 animate-in fade-in duration-150">
             <MarketStats />
-            <div className="flex items-center justify-between">
-              <TimeFilter
-                selectedFilter={selectedTimeFilter}
-                onFilterChange={setSelectedTimeFilter}
-              />
-              <div className="flex gap-2">
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant={viewMode === "list" ? "solid" : "flat"}
-                  className={viewMode === "list" ? "bg-[#CDEB63] text-black hover:bg-[#CDEB63]/90" : "hover:bg-[#CDEB63]/10"}
-                  onPress={() => setViewMode("list")}
-                >
-                  <Icon icon="lucide:list" width={16} height={16} className={viewMode === "list" ? "text-black" : "text-[#CDEB63]"} />
-                </Button>
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant={viewMode === "grid" ? "solid" : "flat"}
-                  className={viewMode === "grid" ? "bg-[#CDEB63] text-black hover:bg-[#CDEB63]/90" : "hover:bg-[#CDEB63]/10"}
-                  onPress={() => setViewMode("grid")}
-                >
-                  <Icon icon="lucide:grid" width={16} height={16} className={viewMode === "grid" ? "text-black" : "text-[#CDEB63]"} />
-                </Button>
-              </div>
-            </div>
+            <ViewControls />
             <TokenList 
               viewMode={viewMode} 
               onSelectToken={(tokenId) => {
@@ -74,10 +81,34 @@ export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }) => {
             />
           </div>
         );
-      
-      case "explore":
+
+      case "search":
         return (
-          <div className="space-y-4 animate-in fade-in duration-300">
+          <div className="animate-in fade-in duration-150">
+            <ViewControls />
+            <TokenList 
+              viewMode={viewMode}
+              onSelectToken={(tokenId) => {
+                setSelectedToken(tokenId);
+                setCurrentRoute("token");
+              }}
+            />
+          </div>
+        );
+
+      case "domains":
+        return (
+          <div className="animate-in fade-in duration-150">
+            <DomainPage 
+              isWalletConnected={isWalletConnected}
+              onBack={() => setCurrentRoute("home")}
+            />
+          </div>
+        );
+
+      case "leaderboard":
+        return (
+          <div className="animate-in fade-in duration-150">
             <Leaderboard 
               onBack={() => setCurrentRoute("home")}
               onSelectToken={(tokenId) => {
@@ -87,24 +118,14 @@ export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }) => {
             />
           </div>
         );
-      
-      case "domains":
-        return (
-          <DomainPage 
-            onBack={() => setCurrentRoute("home")}
-            isWalletConnected={isWalletConnected}
-          />
-        );
-      
+
       case "profile":
         return (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <ProfilePage 
-              isWalletConnected={isWalletConnected}
-            />
+          <div className="animate-in fade-in duration-150">
+            <ProfilePage isWalletConnected={isWalletConnected} />
           </div>
         );
-      
+
       case "token":
         return selectedToken ? (
           <TokenDetail
@@ -112,7 +133,7 @@ export const Routes: React.FC<RoutesProps> = ({ isWalletConnected }) => {
             onBack={() => setCurrentRoute("home")}
           />
         ) : null;
-      
+
       default:
         return null;
     }

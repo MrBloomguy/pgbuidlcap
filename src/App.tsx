@@ -9,6 +9,7 @@ import { ThemeSwitcher } from "./components/theme-switcher";
 import { MobileNavigation } from "./components/mobile-navigation";
 import { MarketStats } from "./components/market-stats";
 import { Routes } from "./components/routes";
+import { WalletConnectProvider, WalletConnectButton } from "./components/wallet-connect";
 
 export default function App() {
   const { theme } = useTheme();
@@ -16,6 +17,31 @@ export default function App() {
   const [selectedTimeFilter, setSelectedTimeFilter] = React.useState("6H");
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 768);
   const [isWalletConnected, setIsWalletConnected] = React.useState(false);
+  const [account, setAccount] = React.useState<string>();
+
+  // Listen for wallet connection events
+  React.useEffect(() => {
+    const handleAccountsChanged = (accounts: string[]) => {
+      setIsWalletConnected(accounts.length > 0);
+      setAccount(accounts[0]);
+    };
+
+    if ((window as any).ethereum) {
+      (window as any).ethereum.on('accountsChanged', handleAccountsChanged);
+      // Check initial connection state
+      (window as any).ethereum.request({ method: 'eth_accounts' })
+        .then((accounts: string[]) => {
+          setIsWalletConnected(accounts.length > 0);
+          setAccount(accounts[0]);
+        });
+    }
+
+    return () => {
+      if ((window as any).ethereum) {
+        (window as any).ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -31,14 +57,15 @@ export default function App() {
   };
 
   return (
-    <div className={theme === "dark" ? "dark" : "light"}>
-      <div className="min-h-screen h-screen bg-background text-foreground flex flex-col">
-        {/* Fixed Header */}
-        <Navbar 
-          maxWidth="full" 
-          className="border-b border-divider compact-nav h-12 bg-background/70 backdrop-blur-md"
-          isBordered
-        >
+    <WalletConnectProvider>
+      <div className={theme === "dark" ? "dark" : "light"}>
+        <div className="min-h-screen h-screen bg-background text-foreground flex flex-col">
+          {/* Fixed Header */}
+          <Navbar 
+            maxWidth="full" 
+            className="border-b border-divider compact-nav h-12 bg-background/70 backdrop-blur-md"
+            isBordered
+          >
           <NavbarContent className="gap-2">
             <NavbarBrand>
               <div className="flex items-center gap-2">
@@ -46,38 +73,95 @@ export default function App() {
                 <p className="font-bold text-inherit text-sm hidden sm:block">YouBuidl</p>
               </div>
             </NavbarBrand>
+          </NavbarContent>
 
+          <NavbarContent className="hidden sm:flex gap-4 flex-1 justify-center">
             <NavbarItem>
-              <Input
-                classNames={{
-                  base: "max-w-full sm:max-w-[20rem]",
-                  mainWrapper: "h-full",
-                  input: "text-sm font-medium placeholder:text-default-400",
-                  inputWrapper: "h-8 font-normal text-default-300 bg-default-100/60 border border-default-200 rounded-md hover:border-default-300 focus-within:border-primary focus-within:bg-background transition-all duration-200",
-                }}
-                placeholder="Search projects, rounds, or builders..."
-                size="sm"
-                radius="md"
-                startContent={<Icon icon="lucide:search" className="text-default-400" width={16} height={16} />}
-                type="search"
-              />
+              <div className="relative w-[24rem] max-w-full">
+                <Input
+                  classNames={{
+                    base: "w-full",
+                    mainWrapper: "h-full",
+                    input: "text-sm font-medium placeholder:text-default-400",
+                    inputWrapper: "h-8 font-normal text-default-300 bg-default-100/60 border border-default-200 rounded-md hover:border-default-300 focus-within:border-primary focus-within:bg-background transition-all duration-200",
+                  }}
+                  placeholder="Search grants, projects, or builders..."
+                  size="sm"
+                  radius="md"
+                  startContent={<Icon icon="lucide:search" className="text-default-400 flex-shrink-0" width={16} height={16} />}
+                  endContent={
+                    <Button 
+                      size="sm" 
+                      variant="light" 
+                      isIconOnly
+                      className="text-default-400"
+                    >
+                      <Icon icon="lucide:filter" width={14} height={14} />
+                    </Button>
+                  }
+                  type="search"
+                />
+              </div>
             </NavbarItem>
+          </NavbarContent>
 
+          <NavbarContent className="hidden md:flex">
             <NavbarItem>
-              <div className="hidden md:flex gap-4">
+              <div className="flex items-center gap-3">
                 <Button
                   variant="light"
                   className="text-sm font-medium"
                   startContent={<Icon icon="lucide:compass" width={16} height={16} />}
+                  onClick={() => {
+                    const event = new CustomEvent('mobileNavChange', { detail: { tab: 'explore' } });
+                    window.dispatchEvent(event);
+                  }}
                 >
                   Explore
                 </Button>
                 <Button
                   variant="light"
                   className="text-sm font-medium"
-                  startContent={<Icon icon="lucide:trending-up" width={16} height={16} />}
+                  startContent={<Icon icon="lucide:search" width={16} height={16} />}
+                  onClick={() => {
+                    const event = new CustomEvent('mobileNavChange', { detail: { tab: 'search' } });
+                    window.dispatchEvent(event);
+                  }}
                 >
-                  Trending
+                  Search
+                </Button>
+                <Button
+                  variant="light"
+                  className="text-sm font-medium"
+                  startContent={<Icon icon="lucide:grid" width={16} height={16} />}
+                  onClick={() => {
+                    const event = new CustomEvent('mobileNavChange', { detail: { tab: 'domains' } });
+                    window.dispatchEvent(event);
+                  }}
+                >
+                  Domains
+                </Button>
+                <Button
+                  variant="light"
+                  className="text-sm font-medium"
+                  startContent={<Icon icon="lucide:trophy" width={16} height={16} />}
+                  onClick={() => {
+                    const event = new CustomEvent('mobileNavChange', { detail: { tab: 'leaderboard' } });
+                    window.dispatchEvent(event);
+                  }}
+                >
+                  Leaderboard
+                </Button>
+                <Button
+                  variant="light"
+                  className="text-sm font-medium"
+                  startContent={<Icon icon="lucide:user" width={16} height={16} />}
+                  onClick={() => {
+                    const event = new CustomEvent('mobileNavChange', { detail: { tab: 'profile' } });
+                    window.dispatchEvent(event);
+                  }}
+                >
+                  Profile
                 </Button>
               </div>
             </NavbarItem>
@@ -89,33 +173,10 @@ export default function App() {
             </NavbarItem>
           
             <NavbarItem>
-              <Button 
-                color={isWalletConnected ? "success" : "primary"}
+              <WalletConnectButton 
                 variant="solid"
-                className="hidden sm:flex compact-button"
                 size="sm"
-                onPress={handleConnectWallet}
-              >
-                {isWalletConnected ? (
-                  <>
-                    <Icon icon="lucide:check-circle" className="mr-1" width={14} height={14} />
-                    <span className="truncate max-w-[80px]">0x1a2b...3c4d</span>
-                  </>
-                ) : (
-                  "Connect Wallet"
-                )}
-              </Button>
-              <Button 
-                isIconOnly 
-                color={isWalletConnected ? "success" : "primary"}
-                variant="solid"
-                className="sm:hidden"
-                size="sm"
-                aria-label="Connect Wallet"
-                onPress={handleConnectWallet}
-              >
-                <Icon icon={isWalletConnected ? "lucide:check-circle" : "lucide:wallet"} width={14} height={14} />
-              </Button>
+              />
             </NavbarItem>
             <NavbarItem className="md:hidden">
               <Button 
@@ -142,11 +203,12 @@ export default function App() {
               <Routes isWalletConnected={isWalletConnected} />
             </div>
           </main>
+          </div>
+          
+          {/* Mobile Navigation */}
+          {isMobile && <MobileNavigation />}
         </div>
-        
-        {/* Mobile Navigation */}
-        {isMobile && <MobileNavigation />}
       </div>
-    </div>
+    </WalletConnectProvider>
   );
 }
