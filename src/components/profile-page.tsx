@@ -16,13 +16,13 @@ interface Badge {
 }
 
 const StatCard = ({ label, value, icon }: { label: string; value: string; icon: string }) => (
-  <div className="flex items-center gap-3 p-3 bg-default-50 rounded-xl">
-    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-      <Icon icon={icon} className="text-primary" />
+  <div className="flex items-center gap-2 p-2.5 sm:p-4 bg-default-50/50 backdrop-blur-sm rounded-xl border border-default-200/50 hover:bg-default-100/50 transition-all group">
+    <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+      <Icon icon={icon} className="text-primary w-4 h-4 sm:w-6 sm:h-6" />
     </div>
-    <div>
-      <p className="text-sm text-default-400">{label}</p>
-      <p className="font-semibold">{value}</p>
+    <div className="min-w-0">
+      <p className="text-xs sm:text-sm text-default-400 font-medium truncate">{label}</p>
+      <p className="text-sm sm:text-lg font-bold tracking-tight mt-0.5">{value}</p>
     </div>
   </div>
 );
@@ -124,54 +124,73 @@ export const ProfilePage: React.FC = () => {
   const getBadgeColor = (level: 'bronze' | 'silver' | 'gold' | 'diamond') => {
     switch (level) {
       case 'diamond': return {
-        base: "bg-blue-50 border-blue-500",
-        content: "text-blue-600",
-        dot: "bg-blue-500"
+        base: "bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 border border-blue-200 shadow-sm hover:shadow-md transition-shadow",
+        content: "text-blue-700 font-medium",
+        dot: "bg-gradient-to-r from-blue-400 to-blue-600",
+        icon: "text-blue-600"
       };
       case 'gold': return {
-        base: "bg-yellow-50 border-yellow-500",
-        content: "text-yellow-600",
-        dot: "bg-yellow-500"
+        base: "bg-gradient-to-r from-yellow-50 via-amber-100 to-yellow-50 border border-yellow-200 shadow-sm hover:shadow-md transition-shadow",
+        content: "text-yellow-700 font-medium",
+        dot: "bg-gradient-to-r from-yellow-400 to-amber-500",
+        icon: "text-yellow-600"
       };
       case 'silver': return {
-        base: "bg-gray-50 border-gray-500",
-        content: "text-gray-600",
-        dot: "bg-gray-500"
+        base: "bg-gradient-to-r from-gray-50 via-slate-100 to-gray-50 border border-gray-200 shadow-sm hover:shadow-md transition-shadow",
+        content: "text-gray-700 font-medium",
+        dot: "bg-gradient-to-r from-gray-400 to-slate-500",
+        icon: "text-gray-600"
       };
       default: return {
-        base: "bg-amber-50 border-amber-500",
-        content: "text-amber-600",
-        dot: "bg-amber-500"
+        base: "bg-gradient-to-r from-orange-50 via-amber-100 to-orange-50 border border-amber-200 shadow-sm hover:shadow-md transition-shadow",
+        content: "text-amber-700 font-medium",
+        dot: "bg-gradient-to-r from-amber-400 to-orange-500",
+        icon: "text-amber-600"
       };
     }
   };
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto px-4 overflow-y-auto max-h-[calc(100vh-3rem)]">
+    <div className="w-full max-w-[1200px] mx-auto pb-20 sm:pb-0 overflow-y-auto">
       {/* Profile Header */}
-      <Card className="w-full mb-6">
+      <Card className="w-full mb-4 sm:mb-6 border-none shadow-lg rounded-2xl overflow-visible">
         <CardBody className="p-0">
           {/* Cover Image */}
-          <div className="h-32 md:h-48 bg-gradient-to-r from-[#CDEB63]/20 to-[#CDEB63]/10 relative">
-            <Button
-              isIconOnly
-              className="absolute top-4 right-4 bg-background/50 backdrop-blur-md"
-              variant="light"
-              size="sm"
-              onPress={() => setEditModal({ isOpen: true, type: 'profile' })}
-            >
-              <Icon icon="lucide:edit" width={14} />
-            </Button>
+          <div className="relative">
+            <div className="h-32 sm:h-40 md:h-56 bg-gradient-to-br from-primary/30 via-primary/20 to-background/10 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/30 backdrop-blur-sm"></div>
+              <div className="absolute inset-0 bg-[url('/patterns/grid.png')] opacity-30 mix-blend-soft-light"></div>
+            </div>
+            <div className="absolute top-4 right-4 flex gap-2">
+              <Button
+                isIconOnly
+                className="bg-background/80 backdrop-blur-xl hover:bg-background shadow-lg transition-all"
+                variant="flat"
+                size="sm"
+                onPress={() => window.navigator.clipboard.writeText(address || '')}
+              >
+                <Icon icon="lucide:copy" width={14} />
+              </Button>
+              <Button
+                isIconOnly
+                className="bg-background/80 backdrop-blur-xl hover:bg-background shadow-lg transition-all"
+                variant="flat"
+                size="sm"
+                onPress={() => setEditModal({ isOpen: true, type: 'profile' })}
+              >
+                <Icon icon="lucide:edit" width={14} />
+              </Button>
+            </div>
           </div>
 
           {/* Profile Info */}
-          <div className="px-4 pb-4 md:px-6 md:pb-6">
-            <div className="flex flex-col md:flex-row gap-4 items-start relative">
+          <div className="px-3 pb-4 sm:px-6 sm:pb-8">
+            <div className="flex flex-col items-center sm:items-start sm:flex-row gap-4 sm:gap-6 relative">
               {/* Avatar */}
-              <div className="relative -mt-12 md:-mt-16">
+              <div className="relative -mt-16 sm:-mt-20 md:-mt-24">
                 <Avatar
                   src={getAvatarUrl(ensAvatar, address || '', theme as 'light' | 'dark')}
-                  className="w-24 h-24 md:w-32 md:h-32 ring-4 ring-background"
+                  className="w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 ring-4 ring-background shadow-xl"
                   alt={displayName}
                 />
                 <Button
@@ -186,13 +205,24 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* Profile Details */}
-              <div className="flex-1 space-y-3">
-                <div>
-                  <h1 className="text-2xl font-bold">{displayName}</h1>
-                  <p className="text-default-400">{shortAddress}</p>
+              <div className="flex-1 space-y-4 text-center sm:text-left w-full">
+                <div className="space-y-1">
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{displayName}</h1>
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <p className="text-sm text-default-400 font-medium">{shortAddress}</p>
+                    <Button
+                      isIconOnly
+                      className="w-6 h-6 min-w-unit-6 bg-default-100/50"
+                      variant="light"
+                      size="sm"
+                      onPress={() => navigator.clipboard.writeText(address || '')}
+                    >
+                      <Icon icon="lucide:copy" className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2">
                   {/* Wallet Balance */}
                   <Chip
                     size="sm"
@@ -234,12 +264,12 @@ export const ProfilePage: React.FC = () => {
                 </div>
 
                 {/* Bio */}
-                <p className="text-sm text-default-500 max-w-2xl">
+                <p className="text-sm text-default-500 max-w-2xl px-4 sm:px-0 leading-relaxed">
                   {bio}
                 </p>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mt-6">
                   <StatCard
                     label="Experience"
                     value="1,250"
@@ -275,11 +305,17 @@ export const ProfilePage: React.FC = () => {
         }}
         placement="center"
         backdrop="blur"
+        classNames={{
+          base: "border border-default-200 bg-background/80 backdrop-blur-xl dark:bg-default-100/50",
+          header: "border-b border-default-200",
+          body: "p-0",
+          backdrop: "backdrop-blur-sm backdrop-saturate-150"
+        }}
       >
         <ModalContent>
           <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-xl font-semibold tracking-tight">
                 {editModal.type === 'avatar' ? 'Customize Avatar' : 'Edit Profile'}
               </h3>
               <Button

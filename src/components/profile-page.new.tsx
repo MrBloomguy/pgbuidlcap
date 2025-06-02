@@ -16,13 +16,13 @@ interface Badge {
 }
 
 const StatCard = ({ label, value, icon }: { label: string; value: string; icon: string }) => (
-  <div className="flex items-center gap-2 p-3 bg-default-50/50 backdrop-blur-sm rounded-2xl hover:bg-default-100/50 transition-colors">
-    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-      <Icon icon={icon} className="text-primary w-5 h-5" />
+  <div className="flex flex-col items-center gap-3 p-4 bg-content1/50 backdrop-blur-sm rounded-2xl hover:bg-content1 transition-all border border-content1 group">
+    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+      <Icon icon={icon} className="text-primary w-7 h-7" />
     </div>
-    <div>
-      <p className="text-xs text-default-400">{label}</p>
-      <p className="text-base font-semibold">{value}</p>
+    <div className="text-center">
+      <p className="text-xs text-default-400 mb-1 uppercase tracking-wider">{label}</p>
+      <p className="text-lg font-bold tracking-tight">{value}</p>
     </div>
   </div>
 );
@@ -90,7 +90,8 @@ export const ProfilePage: React.FC = () => {
   }
 
   const displayName = ensName || address;
-  const shortAddress = address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : '';
+  const shortAddress = address ? 
+    `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : '';
 
   // Helper function to format the balance with appropriate decimal places
   const formatBalance = () => {
@@ -153,30 +154,44 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="w-full max-w-[1200px] mx-auto space-y-4 relative pb-20 md:pb-4">
       {/* Profile Header */}
-      <Card className="w-full overflow-visible rounded-xl">
+      <Card className="w-full overflow-visible rounded-2xl border-none shadow-lg">
         <CardBody className="p-0">
           {/* Cover Image */}
-          <div className="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent relative overflow-hidden">
-            <div className="absolute inset-0 backdrop-blur-xl"></div>
-            <Button
-              isIconOnly
-              className="absolute top-3 right-3 bg-background/50 backdrop-blur-md"
-              variant="flat"
-              size="sm"
-              onPress={() => setEditModal({ isOpen: true, type: 'profile' })}
-            >
-              <Icon icon="lucide:edit" width={14} />
-            </Button>
+          <div className="relative">
+            <div className="h-40 sm:h-48 md:h-56 bg-gradient-to-br from-primary/30 via-primary/20 to-background/10 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/30 backdrop-blur-sm"></div>
+              <div className="absolute inset-0 bg-[url('/path/to/pattern.png')] opacity-30 mix-blend-soft-light"></div>
+            </div>
+            <div className="absolute top-4 right-4 flex gap-2">
+              <Button
+                isIconOnly
+                className="bg-background/80 backdrop-blur-xl hover:bg-background shadow-lg transition-all"
+                variant="flat"
+                size="sm"
+                onPress={() => setEditModal({ isOpen: true, type: 'share' })}
+              >
+                <Icon icon="lucide:share" width={14} />
+              </Button>
+              <Button
+                isIconOnly
+                className="bg-background/80 backdrop-blur-xl hover:bg-background shadow-lg transition-all"
+                variant="flat"
+                size="sm"
+                onPress={() => setEditModal({ isOpen: true, type: 'profile' })}
+              >
+                <Icon icon="lucide:edit" width={14} />
+              </Button>
+            </div>
           </div>
 
           {/* Profile Info */}
-          <div className="px-4 pb-4 md:px-6 md:pb-6">
+          <div className="px-4 pb-6 md:px-6 md:pb-8">
             <div className="flex flex-col items-center relative">
               {/* Avatar */}
-              <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 md:static md:transform-none">
+              <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 md:static md:transform-none">
                 <Avatar
                   src={getAvatarUrl(ensAvatar, address || '', theme as 'light' | 'dark')}
-                  className="w-24 h-24 md:w-32 md:h-32 ring-4 ring-background"
+                  className="w-28 h-28 md:w-32 md:h-32 ring-4 ring-background shadow-xl"
                   alt={displayName}
                 />
                 <Button
@@ -191,10 +206,21 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* Profile Details */}
-              <div className="w-full mt-10 md:mt-4 space-y-3 text-center">
-                <div>
-                  <h1 className="text-xl font-bold">{displayName}</h1>
-                  <p className="text-default-400 text-sm">{shortAddress}</p>
+              <div className="w-full mt-14 md:mt-6 space-y-6 text-center">
+                <div className="space-y-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{displayName}</h1>
+                  <div className="flex items-center justify-center gap-2">
+                    <p className="text-default-400 text-sm font-medium tracking-wide">{shortAddress}</p>
+                    <Button
+                      isIconOnly
+                      className="w-6 h-6 min-w-unit-6 bg-default-100/50 hover:bg-default-200/50"
+                      variant="light"
+                      size="sm"
+                      onPress={() => navigator.clipboard.writeText(address || '')}
+                    >
+                      <Icon icon="lucide:copy" className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="flex flex-wrap justify-center items-center gap-2">
@@ -239,12 +265,14 @@ export const ProfilePage: React.FC = () => {
                 </div>
 
                 {/* Bio */}
-                <p className="text-sm text-default-500 max-w-2xl">
-                  {bio}
-                </p>
+                <div className="max-w-2xl mx-auto px-4">
+                  <p className="text-sm text-default-500 leading-relaxed">
+                    {bio}
+                  </p>
+                </div>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 px-2">
                   <StatCard
                     label="Experience"
                     value="1,250"
@@ -273,24 +301,23 @@ export const ProfilePage: React.FC = () => {
       </Card>
 
       {/* Floating Action Button */}
-      <div className="fixed bottom-20 right-4 md:hidden z-50 flex flex-col gap-2">
+      <div className="fixed bottom-20 right-4 md:hidden z-50 flex flex-col-reverse gap-3">
         <Button
           isIconOnly
           variant="solid"
           color="primary"
-          className="rounded-full shadow-lg"
-          onPress={() => setEditModal({ isOpen: true, type: 'share' })}
+          className="w-12 h-12 rounded-full shadow-xl bg-gradient-to-r from-primary to-primary-600 hover:opacity-90 transition-all"
+          onPress={() => setEditModal({ isOpen: true, type: 'profile' })}
         >
-          <Icon icon="lucide:share" width={20} />
+          <Icon icon="lucide:edit" className="w-5 h-5" />
         </Button>
         <Button
           isIconOnly
-          variant="solid"
-          color="primary"
-          className="rounded-full shadow-lg"
-          onPress={() => setEditModal({ isOpen: true, type: 'profile' })}
+          variant="flat"
+          className="w-12 h-12 rounded-full shadow-xl bg-background/80 backdrop-blur-xl hover:bg-background transition-all"
+          onPress={() => setEditModal({ isOpen: true, type: 'share' })}
         >
-          <Icon icon="lucide:edit" width={20} />
+          <Icon icon="lucide:share" className="w-5 h-5" />
         </Button>
       </div>
 
