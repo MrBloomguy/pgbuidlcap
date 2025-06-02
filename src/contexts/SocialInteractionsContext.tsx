@@ -4,14 +4,13 @@ import { Comment, DomainInteraction } from '../types/social';
 import { supabase } from '../utils/supabase';
 import { toast } from 'react-hot-toast';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface SocialInteractionsContextType {
   // Comments
   comments: Record<string, Comment[]>;
   addComment: (domainId: string, content: string) => Promise<void>;
   addReply: (domainId: string, parentCommentId: string, content: string) => Promise<void>;
-  likeComment: (domainId: string, commentId: string) => Promise<void>;
+  likeComment: (commentId: string) => Promise<void>;
   
   // Upvotes
   upvotedDomains: Set<string>;
@@ -23,6 +22,7 @@ interface SocialInteractionsContextType {
   loadComments: (domainId: string) => Promise<void>;
   loadDomainInteractions: (domainId: string) => Promise<void>;
   loadUserInteractions: () => Promise<void>;
+  subscribeToDomain: (domainId: string) => void;
 }
 
 const SocialInteractionsContext = createContext<SocialInteractionsContextType | null>(null);
@@ -34,8 +34,13 @@ export const SocialInteractionsProvider: React.FC<{ children: React.ReactNode }>
   const [upvotedDomainCounts, setUpvotedDomainCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
   
-  // Ref to store active subscriptions
+  // Refs for managing subscriptions and pending actions
   const subscriptions = useRef<Record<string, RealtimeChannel>>({});
+  const pendingActions = useRef<Set<string>>(new Set());
+
+  const isActionPending = useCallback((actionKey: string) => pendingActions.current.has(actionKey), []);
+  const addPendingAction = useCallback((actionKey: string) => pendingActions.current.add(actionKey), []);
+  const removePendingAction = useCallback((actionKey: string) => pendingActions.current.delete(actionKey), []);
 
   // Function to subscribe to a domain's real-time updates
   const subscribeToDomain = useCallback((domainId: string) => {
@@ -52,9 +57,9 @@ export const SocialInteractionsProvider: React.FC<{ children: React.ReactNode }>
         schema: 'public',
         table: 'comments',
         filter: `domain_id=eq.${domainId}`
-      }, async (payload) => {
+      }, async (payload: CommentChanges) => {
         if (payload.eventType === 'INSERT') {
-          const newComment = payload.new as any;
+          const newComment = payload.new;
           setComments(prev => ({
             ...prev,
             [domainId]: [...(prev[domainId] || []), {
@@ -66,6 +71,7 @@ export const SocialInteractionsProvider: React.FC<{ children: React.ReactNode }>
               content: newComment.content,
               timestamp: new Date(newComment.created_at).getTime(),
               likes: newComment.likes_count || 0,
+              hasLiked: false,
             }]
           }));
         } else if (payload.eventType === 'DELETE') {
@@ -121,7 +127,56 @@ export const SocialInteractionsProvider: React.FC<{ children: React.ReactNode }>
       })
       .subscribe();
 
-    subscriptions.current[domainId] = commentsSub;
+    // Subscribe to comment likes
+    const likesSub = supabase
+      .channel(`comment-likes:${domainId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'comment_likes',
+      }, async (payload: CommentLikeChanges) => {
+        const commentId = payload.new?.comment_id || payload.old?.comment_id;
+        const userAddress = payload.new?.user_address || payload.old?.user_address;
+        
+        if (!commentId || !userAddress) return;
+
+        // Update the hasLiked state and likes count for the affected comment
+        setComments(prev => ({
+          ...prev,
+          [domainId]: prev[domainId]?.map(comment => {
+            if (comment.id === commentId) {
+              const isLike = payload.eventType === 'INSERT';
+              const isCurrentUser = address === userAddress;
+              
+              return {
+                ...comment,
+                hasLiked: isCurrentUser ? isLike : comment.hasLiked,
+                likes: comment.likes + (isLike ? 1 : -1)
+              };
+            }
+            // Also update any replies
+            if (comment.replies?.length) {
+              return {
+                ...comment,
+                replies: comment.replies.map(reply =>
+                  reply.id === commentId
+                    ? {
+                        ...reply,
+                        hasLiked: address === userAddress ? isLike : reply.hasLiked,
+                        likes: reply.likes + (isLike ? 1 : -1)
+                      }
+                    : reply
+                )
+              };
+            }
+            return comment;
+          }) || []
+        }));
+      })
+      .subscribe();
+
+    // Store all subscriptions
+    subscriptions.current[domainId] = { commentsSub, upvotesSub, commentLikesSub };
   }, [address]);
 
   // Cleanup subscriptions when component unmounts
@@ -135,67 +190,6 @@ export const SocialInteractionsProvider: React.FC<{ children: React.ReactNode }>
   useEffect(() => {
     if (address) {
       loadUserInteractions();
-    }
-  }, [address]);
-
-  // Helper to check if an action is pending
-  const isActionPending = (actionKey: string) => pendingActions.current.has(actionKey);
-  const addPendingAction = (actionKey: string) => pendingActions.current.add(actionKey);
-  const removePendingAction = (actionKey: string) => pendingActions.current.delete(actionKey);
-
-  // Helper to set loading state for specific actions
-  const setLoadingState = (key: string, value: boolean) => {
-    setIsLoading(prev => ({ ...prev, [key]: value }));
-  };
-
-  // Load user's interactions (liked comments and upvoted domains)
-  const loadUserInteractions = useCallback(async () => {
-    if (!address || isActionPending('loadUserInteractions')) return;
-    
-    try {
-      addPendingAction('loadUserInteractions');
-      setLoadingState('userInteractions', true);
-
-      const [upvotesResponse, likesResponse] = await Promise.all([
-        supabase
-          .from('domain_upvotes')
-          .select('domain_id')
-          .eq('user_address', address),
-        supabase
-          .from('comment_likes')
-          .select('comment_id')
-          .eq('user_address', address)
-      ]);
-
-      if (upvotesResponse.error) throw upvotesResponse.error;
-      if (likesResponse.error) throw likesResponse.error;
-
-      setUpvotedDomains(new Set(upvotesResponse.data.map(d => d.domain_id)));
-      
-      // Update comment likes in existing comments
-      if (likesResponse.data.length > 0) {
-        const likedCommentIds = new Set(likesResponse.data.map(l => l.comment_id));
-        setComments(prev => {
-          const updated = { ...prev };
-          for (const domainId in updated) {
-            updated[domainId] = updated[domainId].map(comment => ({
-              ...comment,
-              hasLiked: likedCommentIds.has(comment.id),
-              replies: comment.replies?.map(reply => ({
-                ...reply,
-                hasLiked: likedCommentIds.has(reply.id)
-              }))
-            }));
-          }
-          return updated;
-        });
-      }
-    } catch (error) {
-      console.error('Failed to load user interactions:', error);
-      toast.error('Failed to load your interactions');
-    } finally {
-      setLoadingState('userInteractions', false);
-      removePendingAction('loadUserInteractions');
     }
   }, [address]);
 
@@ -240,305 +234,236 @@ export const SocialInteractionsProvider: React.FC<{ children: React.ReactNode }>
       removePendingAction(`loadComments:${domainId}`);
       setIsLoading(prev => ({ ...prev, [`comments:${domainId}`]: false }));
     }
-  }, [subscribeToDomain]);
+  }, [subscribeToDomain, isActionPending, addPendingAction, removePendingAction]);
 
   // Add a new comment
   const addComment = useCallback(async (domainId: string, content: string) => {
-    if (!address) {
-      toast.error('Please connect your wallet to comment');
-      return;
-    }
-    
+    if (!address || isActionPending(`addComment:${domainId}`)) return;
+
     const tempId = `temp-${Date.now()}`;
-    const timestamp = Date.now();
-    
-    // Optimistically add the comment
-    const optimisticComment: Comment = {
+    const newComment: Comment = {
       id: tempId,
       domainId,
       author: {
         address,
       },
       content,
-      timestamp,
+      timestamp: Date.now(),
       likes: 0,
-      hasLiked: false
     };
 
-    setComments(prev => ({
-      ...prev,
-      [domainId]: [optimisticComment, ...(prev[domainId] || [])]
-    }));
-    
     try {
+      addPendingAction(`addComment:${domainId}`);
+      
+      // Optimistic update
+      setComments(prev => ({
+        ...prev,
+        [domainId]: [...(prev[domainId] || []), newComment],
+      }));
+
       const { data, error } = await supabase
         .from('comments')
-        .insert([{ 
-          domain_id: domainId,
-          content,
-          author_address: address
-        }])
+        .insert([
+          {
+            domain_id: domainId,
+            author_address: address,
+            content,
+          }
+        ])
         .select()
         .single();
 
       if (error) throw error;
 
-      // Replace optimistic comment with real one
+      // Real update with server data
       setComments(prev => ({
         ...prev,
-        [domainId]: prev[domainId].map(c => 
-          c.id === tempId ? {
-            ...c,
-            id: data.id,
-            timestamp: new Date(data.created_at).getTime()
-          } : c
-        )
+        [domainId]: prev[domainId]?.map(comment => 
+          comment.id === tempId 
+            ? {
+                ...comment,
+                id: data.id,
+                timestamp: new Date(data.created_at).getTime(),
+              }
+            : comment
+        ) || [],
       }));
 
       toast.success('Comment added successfully');
     } catch (error) {
-      // Remove optimistic comment on error
+      // Revert optimistic update on error
       setComments(prev => ({
         ...prev,
-        [domainId]: prev[domainId].filter(c => c.id !== tempId)
+        [domainId]: prev[domainId]?.filter(comment => comment.id !== tempId) || [],
       }));
       console.error('Failed to add comment:', error);
       toast.error('Failed to add comment');
+    } finally {
+      removePendingAction(`addComment:${domainId}`);
     }
-  }, [address]);
+  }, [address, isActionPending, addPendingAction, removePendingAction]);
 
   // Add a reply to a comment
   const addReply = useCallback(async (domainId: string, parentCommentId: string, content: string) => {
-    if (!address) {
-      toast.error('Please connect your wallet to reply');
-      return;
-    }
-    
-    const tempId = `temp-reply-${Date.now()}`;
-    const timestamp = Date.now();
-    
-    // Optimistically add the reply
-    const optimisticReply: Comment = {
+    if (!address || isActionPending(`addReply:${parentCommentId}`)) return;
+
+    const tempId = `temp-${Date.now()}`;
+    const newReply: Comment = {
       id: tempId,
       domainId,
       author: {
         address,
       },
       content,
-      timestamp,
+      timestamp: Date.now(),
       likes: 0,
-      hasLiked: false
     };
 
-    setComments(prev => {
-      const updated = [...prev[domainId]];
-      const parentIndex = updated.findIndex(c => c.id === parentCommentId);
-      if (parentIndex > -1) {
-        updated[parentIndex] = {
-          ...updated[parentIndex],
-          replies: [...(updated[parentIndex].replies || []), optimisticReply]
-        };
-      }
-      return { ...prev, [domainId]: updated };
-    });
-    
     try {
+      addPendingAction(`addReply:${parentCommentId}`);
+
+      // Optimistic update
+      setComments(prev => ({
+        ...prev,
+        [domainId]: prev[domainId]?.map(comment => 
+          comment.id === parentCommentId
+            ? { ...comment, replies: [...(comment.replies || []), newReply] }
+            : comment
+        ) || []
+      }));
+
       const { data, error } = await supabase
         .from('comments')
-        .insert([{
-          domain_id: domainId,
-          content,
-          author_address: address,
-          parent_id: parentCommentId
-        }])
+        .insert([
+          {
+            domain_id: domainId,
+            parent_id: parentCommentId,
+            author_address: address,
+            content,
+          }
+        ])
         .select()
         .single();
 
       if (error) throw error;
 
-      // Replace optimistic reply with real one
-      setComments(prev => {
-        const updated = [...prev[domainId]];
-        const parentIndex = updated.findIndex(c => c.id === parentCommentId);
-        if (parentIndex > -1) {
-          updated[parentIndex] = {
-            ...updated[parentIndex],
-            replies: updated[parentIndex].replies?.map(r =>
-              r.id === tempId ? {
-                ...r,
-                id: data.id,
-                timestamp: new Date(data.created_at).getTime()
-              } : r
-            )
-          };
-        }
-        return { ...prev, [domainId]: updated };
-      });
+      // Update with server data
+      setComments(prev => ({
+        ...prev,
+        [domainId]: prev[domainId]?.map(comment => 
+          comment.id === parentCommentId
+            ? {
+                ...comment,
+                replies: (comment.replies || []).map(reply =>
+                  reply.id === tempId
+                    ? {
+                        ...reply,
+                        id: data.id,
+                        timestamp: new Date(data.created_at).getTime(),
+                      }
+                    : reply
+                )
+              }
+            : comment
+        ) || []
+      }));
 
       toast.success('Reply added successfully');
     } catch (error) {
-      // Remove optimistic reply on error
-      setComments(prev => {
-        const updated = [...prev[domainId]];
-        const parentIndex = updated.findIndex(c => c.id === parentCommentId);
-        if (parentIndex > -1) {
-          updated[parentIndex] = {
-            ...updated[parentIndex],
-            replies: updated[parentIndex].replies?.filter(r => r.id !== tempId)
-          };
-        }
-        return { ...prev, [domainId]: updated };
-      });
+      // Revert optimistic update
+      setComments(prev => ({
+        ...prev,
+        [domainId]: prev[domainId]?.map(comment => 
+          comment.id === parentCommentId
+            ? {
+                ...comment,
+                replies: (comment.replies || []).filter(reply => reply.id !== tempId)
+              }
+            : comment
+        ) || []
+      }));
       console.error('Failed to add reply:', error);
       toast.error('Failed to add reply');
+    } finally {
+      removePendingAction(`addReply:${parentCommentId}`);
     }
-  }, [address]);
+  }, [address, isActionPending, addPendingAction, removePendingAction]);
 
   // Like/unlike a comment
-  const likeComment = useCallback(async (domainId: string, commentId: string) => {
-    if (!address) {
-      toast.error('Please connect your wallet to like comments');
-      return;
-    }
+  const likeComment = useCallback(async (commentId: string) => {
+    if (!address || isActionPending(`likeComment:${commentId}`)) return;
 
-    if (isActionPending(`like:${commentId}`)) return;
-    
     try {
-      addPendingAction(`like:${commentId}`);
-      
-      // Find the comment and check its current like status
-      let comment: Comment | undefined;
-      let parentComment: Comment | undefined;
-      
-      setComments(prev => {
-        const updated = [...prev[domainId]];
-        const parentIndex = updated.findIndex(c => c.id === commentId);
-        if (parentIndex > -1) {
-          comment = updated[parentIndex];
-          updated[parentIndex] = {
-            ...updated[parentIndex],
-            hasLiked: !updated[parentIndex].hasLiked,
-            likes: updated[parentIndex].likes + (updated[parentIndex].hasLiked ? -1 : 1)
-          };
-        } else {
-          // Search in replies
-          for (const c of updated) {
-            const replyIndex = c.replies?.findIndex(r => r.id === commentId);
-            if (replyIndex !== undefined && replyIndex > -1) {
-              parentComment = c;
-              comment = c.replies![replyIndex];
-              updated[updated.indexOf(c)] = {
-                ...c,
-                replies: c.replies!.map((r, i) => i === replyIndex ? {
-                  ...r,
-                  hasLiked: !r.hasLiked,
-                  likes: r.likes + (r.hasLiked ? -1 : 1)
-                } : r)
-              };
-              break;
-            }
-          }
-        }
-        return { ...prev, [domainId]: updated };
-      });
+      addPendingAction(`likeComment:${commentId}`);
 
-      if (!comment) throw new Error('Comment not found');
-      
-      const isUnlike = comment.hasLiked;
-      
-      if (isUnlike) {
-        const { error } = await supabase
+      // Check if user has already liked
+      const { data: existingLike, error: checkError } = await supabase
+        .from('comment_likes')
+        .select()
+        .eq('comment_id', commentId)
+        .eq('user_address', address)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') throw checkError;
+
+      if (existingLike) {
+        // Unlike
+        const { error: unlikeError } = await supabase
           .from('comment_likes')
           .delete()
           .eq('comment_id', commentId)
           .eq('user_address', address);
 
-        if (error) throw error;
-        
-        await supabase.rpc('decrement_comment_likes', {
-          comment_id: commentId
-        });
+        if (unlikeError) throw unlikeError;
       } else {
-        const { error } = await supabase
+        // Like
+        const { error: likeError } = await supabase
           .from('comment_likes')
           .insert([
-            { comment_id: commentId, user_address: address }
+            {
+              comment_id: commentId,
+              user_address: address
+            }
           ]);
 
-        if (error) throw error;
-        
-        await supabase.rpc('increment_comment_likes', {
-          comment_id: commentId
-        });
+        if (likeError) throw likeError;
       }
+
+      toast.success(existingLike ? 'Comment unliked' : 'Comment liked');
     } catch (error) {
-      // Revert optimistic update
-      setComments(prev => {
-        const updated = [...prev[domainId]];
-        const parentIndex = updated.findIndex(c => c.id === commentId);
-        if (parentIndex > -1) {
-          updated[parentIndex] = {
-            ...updated[parentIndex],
-            hasLiked: !updated[parentIndex].hasLiked,
-            likes: updated[parentIndex].likes + (updated[parentIndex].hasLiked ? 1 : -1)
-          };
-        } else {
-          // Revert in replies
-          for (const c of updated) {
-            const replyIndex = c.replies?.findIndex(r => r.id === commentId);
-            if (replyIndex !== undefined && replyIndex > -1) {
-              updated[updated.indexOf(c)] = {
-                ...c,
-                replies: c.replies!.map((r, i) => i === replyIndex ? {
-                  ...r,
-                  hasLiked: !r.hasLiked,
-                  likes: r.likes + (r.hasLiked ? 1 : -1)
-                } : r)
-              };
-              break;
-            }
-          }
-        }
-        return { ...prev, [domainId]: updated };
-      });
-      console.error('Failed to update like:', error);
+      console.error('Failed to toggle comment like:', error);
       toast.error('Failed to update like');
     } finally {
-      removePendingAction(`like:${commentId}`);
+      removePendingAction(`likeComment:${commentId}`);
     }
-  }, [address]);
+  }, [address, isActionPending, addPendingAction, removePendingAction]);
 
-  // Upvote/unupvote a domain
+  // Upvote/unvote a domain
   const upvoteDomain = useCallback(async (domainId: string) => {
-    if (!address) {
-      toast.error('Please connect your wallet to upvote');
-      return;
-    }
+    if (!address || isActionPending(`upvote:${domainId}`)) return;
 
-    if (isActionPending(`upvote:${domainId}`)) return;
-    
-    const isUnvoting = upvotedDomains.has(domainId);
-    
-    // Optimistic update
-    setUpvotedDomains(prev => {
-      const updated = new Set(prev);
-      if (isUnvoting) {
-        updated.delete(domainId);
-      } else {
-        updated.add(domainId);
-      }
-      return updated;
-    });
-
-    setUpvotedDomainCounts(prev => ({
-      ...prev,
-      [domainId]: (prev[domainId] || 0) + (isUnvoting ? -1 : 1)
-    }));
+    const hasUpvoted = upvotedDomains.has(domainId);
     
     try {
       addPendingAction(`upvote:${domainId}`);
-      
-      if (isUnvoting) {
+
+      // Optimistic update
+      setUpvotedDomains(prev => {
+        const updated = new Set(prev);
+        if (hasUpvoted) {
+          updated.delete(domainId);
+        } else {
+          updated.add(domainId);
+        }
+        return updated;
+      });
+
+      setUpvotedDomainCounts(prev => ({
+        ...prev,
+        [domainId]: (prev[domainId] || 0) + (hasUpvoted ? -1 : 1)
+      }));
+
+      if (hasUpvoted) {
         const { error } = await supabase
           .from('domain_upvotes')
           .delete()
@@ -556,12 +481,12 @@ export const SocialInteractionsProvider: React.FC<{ children: React.ReactNode }>
         if (error) throw error;
       }
 
-      toast.success(isUnvoting ? 'Upvote removed' : 'Domain upvoted successfully');
+      toast.success(hasUpvoted ? 'Upvote removed' : 'Domain upvoted');
     } catch (error) {
       // Revert optimistic update
       setUpvotedDomains(prev => {
         const updated = new Set(prev);
-        if (isUnvoting) {
+        if (hasUpvoted) {
           updated.add(domainId);
         } else {
           updated.delete(domainId);
@@ -571,7 +496,7 @@ export const SocialInteractionsProvider: React.FC<{ children: React.ReactNode }>
 
       setUpvotedDomainCounts(prev => ({
         ...prev,
-        [domainId]: (prev[domainId] || 0) + (isUnvoting ? 1 : -1)
+        [domainId]: (prev[domainId] || 0) + (hasUpvoted ? 1 : -1)
       }));
 
       console.error('Failed to update upvote:', error);
@@ -579,64 +504,100 @@ export const SocialInteractionsProvider: React.FC<{ children: React.ReactNode }>
     } finally {
       removePendingAction(`upvote:${domainId}`);
     }
-  }, [address, upvotedDomains]);
+  }, [address, upvotedDomains, isActionPending, addPendingAction, removePendingAction]);
 
-  // Load domain interactions including upvote counts
+  // Load domain interactions
   const loadDomainInteractions = useCallback(async (domainId: string) => {
-    if (isActionPending(`loadDomainInteractions:${domainId}`)) return;
-    
-    try {
-      addPendingAction(`loadDomainInteractions:${domainId}`);
-      setLoadingState(`domainInteractions:${domainId}`, true);
+    if (!domainId || isActionPending(`domainInteractions:${domainId}`)) return;
 
-      // Get total upvote count and user's upvote status
-      const [{ count }, userUpvote] = await Promise.all([
-        supabase
+    try {
+      addPendingAction(`domainInteractions:${domainId}`);
+      setIsLoading(prev => ({ ...prev, [`domainInteractions:${domainId}`]: true }));
+
+      // Get upvote count
+      const { count: upvoteCount, error: countError } = await supabase
+        .from('domain_upvotes')
+        .select('*', { count: 'exact' })
+        .eq('domain_id', domainId);
+
+      if (countError) throw countError;
+
+      // Check if user has upvoted
+      if (address) {
+        const { data: userUpvote, error: upvoteError } = await supabase
           .from('domain_upvotes')
-          .select('*', { count: 'exact', head: true })
-          .eq('domain_id', domainId),
-        address ? supabase
-          .from('domain_upvotes')
-          .select('domain_id')
+          .select()
           .eq('domain_id', domainId)
           .eq('user_address', address)
-          .maybeSingle()
-        : Promise.resolve({ data: null, error: null })
-      ]);
+          .single();
+
+        if (upvoteError && upvoteError.code !== 'PGRST116') throw upvoteError;
+
+        if (userUpvote) {
+          setUpvotedDomains(prev => new Set([...prev, domainId]));
+        }
+      }
 
       setUpvotedDomainCounts(prev => ({
         ...prev,
-        [domainId]: count || 0
+        [domainId]: upvoteCount || 0
       }));
 
-      if (address && userUpvote?.data) {
-        setUpvotedDomains(prev => new Set([...prev, domainId]));
-      }
+      // Subscribe to real-time updates
+      subscribeToDomain(domainId);
     } catch (error) {
       console.error('Failed to load domain interactions:', error);
       toast.error('Failed to load domain interactions');
     } finally {
-      setLoadingState(`domainInteractions:${domainId}`, false);
-      removePendingAction(`loadDomainInteractions:${domainId}`);
+      removePendingAction(`domainInteractions:${domainId}`);
+      setIsLoading(prev => ({ ...prev, [`domainInteractions:${domainId}`]: false }));
     }
-  }, [address]);
+  }, [address, subscribeToDomain, isActionPending, addPendingAction, removePendingAction]);
+
+  // Load user's interactions
+  const loadUserInteractions = useCallback(async () => {
+    if (!address || isActionPending('userInteractions')) return;
+
+    try {
+      addPendingAction('userInteractions');
+      setIsLoading(prev => ({ ...prev, userInteractions: true }));
+
+      // Get user's upvoted domains
+      const { data: upvotedData, error: upvoteError } = await supabase
+        .from('domain_upvotes')
+        .select('domain_id')
+        .eq('user_address', address);
+
+      if (upvoteError) throw upvoteError;
+
+      setUpvotedDomains(new Set(upvotedData.map(item => item.domain_id)));
+
+    } catch (error) {
+      console.error('Failed to load user interactions:', error);
+      toast.error('Failed to load user interactions');
+    } finally {
+      removePendingAction('userInteractions');
+      setIsLoading(prev => ({ ...prev, userInteractions: false }));
+    }
+  }, [address, isActionPending, addPendingAction, removePendingAction]);
+
+  const value = {
+    comments,
+    upvotedDomains,
+    upvotedDomainCounts,
+    isLoading,
+    loadComments,
+    addComment,
+    addReply,
+    likeComment,
+    upvoteDomain,
+    loadDomainInteractions,
+    loadUserInteractions,
+    subscribeToDomain,
+  };
 
   return (
-    <SocialInteractionsContext.Provider
-      value={{
-        comments,
-        addComment,
-        addReply,
-        likeComment,
-        upvotedDomains,
-        upvotedDomainCounts,
-        upvoteDomain,
-        isLoading,
-        loadComments,
-        loadDomainInteractions,
-        loadUserInteractions
-      }}
-    >
+    <SocialInteractionsContext.Provider value={value}>
       {children}
     </SocialInteractionsContext.Provider>
   );
