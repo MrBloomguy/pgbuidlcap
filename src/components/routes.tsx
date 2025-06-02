@@ -4,7 +4,7 @@ import { TokenList } from "./token-list";
 import { TokenDetail } from "./token-detail";
 import { ProfilePage } from "./profile-page";
 import { Leaderboard } from "./leaderboard";
-import { DomainPage } from "./domain-page";
+import { DomainsPage } from "./domains-page";
 import { SubmitPage } from "./submit-page";
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -85,7 +85,7 @@ export const Routes: React.FC = () => {
               onSelectToken={setSelectedToken}
             />
           )}
-          {currentRoute === "domains" && <DomainPage />}
+          {currentRoute === "domains" && <DomainsPage />}
         </>
       )}
     </>
