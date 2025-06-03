@@ -10,6 +10,7 @@ import { ThemeSwitcher } from "./components/theme-switcher";
 import { MobileNavigation } from "./components/mobile-navigation";
 import { Routes } from "./components/routes";
 import { WalletConnectProvider } from "./components/wallet-connect";
+import { Categories } from "./components/Categories";
 
 export default function App() {
   const { theme } = useTheme();

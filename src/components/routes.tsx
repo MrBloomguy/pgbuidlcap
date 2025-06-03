@@ -9,7 +9,7 @@ import { DomainsPage } from "./domains-page";
 import { SubmitPage } from "./submit-page";
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { TimeFilter } from "./time-filter";
+import { Categories } from "./Categories";
 import { AdminDashboard } from "./admin-dashboard";
 
 export const Routes: React.FC = () => {
@@ -19,7 +19,7 @@ export const Routes: React.FC = () => {
 
   const ViewControls = () => (
     <div className="flex items-center justify-between">
-      <TimeFilter
+      <Categories
         selectedFilter={selectedTimeFilter}
         onFilterChange={setSelectedTimeFilter}
         color="default"
