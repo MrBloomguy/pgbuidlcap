@@ -205,6 +205,12 @@ export const Sidebar = ({
 			label: "Profile",
 			key: "profile",
 		},
+		{
+			path: "/admin",
+			icon: "lucide:settings",
+			label: "Admin",
+			key: "admin",
+		},
 	];
 
 	const loadMoreNetworks = () => {
@@ -428,7 +434,7 @@ export const Sidebar = ({
 							<Button isIconOnly size="sm" variant="light" aria-label="Discord">
 								<Icon
 									icon="lucide:message-circle"
-									className="text-default-500"
+								 className="text-default-500"
 									width={14}
 									height={14}
 								/>

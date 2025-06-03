@@ -1,6 +1,7 @@
 import React from "react";
+import { BrowserRouter as Router, Routes as Switch, Route, Navigate } from "react-router-dom";
 import { MarketStats } from "./market-stats";
-import { TokenList } from "./token-list";
+import { ProjectList } from "./project-list";
 import { TokenDetail } from "./token-detail";
 import { ProfilePage } from "./profile-page";
 import { Leaderboard } from "./leaderboard";
@@ -9,26 +10,12 @@ import { SubmitPage } from "./submit-page";
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { TimeFilter } from "./time-filter";
+import { AdminDashboard } from "./admin-dashboard";
 
 export const Routes: React.FC = () => {
-  const [currentRoute, setCurrentRoute] = React.useState("explore");
   const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<"grid" | "table">("table");
   const [selectedTimeFilter, setSelectedTimeFilter] = React.useState("24H");
-
-  // Listen for mobile navigation changes
-  React.useEffect(() => {
-    const handleMobileNavChange = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      setCurrentRoute(customEvent.detail.tab);
-      setSelectedToken(null); // Reset token selection when changing tabs
-    };
-    
-    window.addEventListener('mobileNavChange', handleMobileNavChange);
-    return () => {
-      window.removeEventListener('mobileNavChange', handleMobileNavChange);
-    };
-  }, []);
 
   const ViewControls = () => (
     <div className="flex items-center justify-between">
@@ -61,33 +48,30 @@ export const Routes: React.FC = () => {
   );
 
   return (
-    <>
-      {selectedToken ? (
-        <TokenDetail tokenId={selectedToken} onBack={() => setSelectedToken(null)} />
-      ) : (
-        <>
-          {currentRoute === "explore" && (
+    <Router>
+      <Switch>
+        <Route path="/" element={
+          selectedToken ? (
+            <TokenDetail tokenId={selectedToken} onBack={() => setSelectedToken(null)} />
+          ) : (
             <div className="space-y-4">
               <MarketStats />
               <ViewControls />
-              <TokenList 
+              <ProjectList 
                 viewMode={viewMode} 
                 onTokenSelect={setSelectedToken}
                 selectedTimeFilter={selectedTimeFilter}
               />
             </div>
-          )}
-          {currentRoute === "profile" && <ProfilePage />}
-          {currentRoute === "submit" && <SubmitPage />}
-          {currentRoute === "leaderboard" && (
-            <Leaderboard 
-              onBack={() => setCurrentRoute("explore")}
-              onSelectToken={setSelectedToken}
-            />
-          )}
-          {currentRoute === "domains" && <DomainsPage />}
-        </>
-      )}
-    </>
+          )
+        } />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/submit" element={<SubmitPage />} />
+        <Route path="/leaderboard" element={<Leaderboard onBack={() => {}} onSelectToken={setSelectedToken} />} />
+        <Route path="/domains" element={<DomainsPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Switch>
+    </Router>
   );
 };
