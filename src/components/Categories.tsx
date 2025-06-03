@@ -26,13 +26,22 @@ export const Categories = ({
     { label: "NFTs", value: "nfts", icon: "lucide:image" },
     { label: "DAOs", value: "daos", icon: "lucide:users" },
     { label: "Gaming", value: "gaming", icon: "lucide:gamepad" },
-    { label: "Social", value: "social", icon: "lucide:message-circle" }
+    { label: "Social", value: "social", icon: "lucide:message-circle" },
+    { label: "AI", value: "ai", icon: "lucide:cpu" },
+    { label: "Infrastructure", value: "infra", icon: "lucide:server" },
+    { label: "ReFi", value: "refi", icon: "lucide:leaf" }
   ];
 
   return (
     <ButtonGroup>
       {allFilters.map(filter => (
-        <Button key={filter.value} onClick={() => onFilterChange(filter.value)}>
+        <Button
+          key={filter.value}
+          variant={selectedFilter === filter.value ? "solid" : "flat"}
+          color={selectedFilter === filter.value ? "primary" : "default"}
+          onClick={() => onFilterChange(filter.value)}
+          startContent={showIcons ? <Icon icon={filter.icon} width={16} height={16} /> : null}
+        >
           {filter.label}
         </Button>
       ))}

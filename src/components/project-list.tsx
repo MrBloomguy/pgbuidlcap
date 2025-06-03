@@ -349,18 +349,3 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   );
 };
 
-// Debug: log mapped project fields
-useEffect(() => {
-  if (!loading && projects.length > 0) {
-    console.log('Mapped Gitcoin projects for table:', projects.map(p => ({
-      id: p.id,
-      title: p.title,
-      amount_received: p.amount_received,
-      status: p.status,
-      categories: p.categories,
-      rounds: p.rounds,
-      url: p.url,
-      funding_sources: p.funding_sources
-    })));
-  }
-}, [loading, projects]);

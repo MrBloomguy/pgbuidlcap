@@ -18,7 +18,7 @@ const mobileLinks = [
   {
     path: "/search",
     icon: "lucide:search",
-    label: "Search",
+    label: "Agent",
     key: "search",
   },
   {

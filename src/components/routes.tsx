@@ -11,6 +11,7 @@ import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Categories } from "./Categories";
 import { AdminDashboard } from "./admin-dashboard";
+import { PGAgentPage } from "./pgagent-page";
 
 export const Routes: React.FC = () => {
   const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
@@ -70,6 +71,7 @@ export const Routes: React.FC = () => {
         <Route path="/leaderboard" element={<Leaderboard onBack={() => {}} onSelectToken={setSelectedToken} />} />
         <Route path="/domains" element={<DomainsPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/pgagent" element={<PGAgentPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Switch>
     </Router>
