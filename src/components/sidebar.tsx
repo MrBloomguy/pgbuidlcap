@@ -182,12 +182,6 @@ export const Sidebar = ({
 			key: "submit",
 		},
 		{
-			path: "/search",
-			icon: "lucide:search",
-			label: "Search",
-			key: "search",
-		},
-		{
 			path: "/domains",
 			icon: "lucide:grid",
 			label: "Domains",
@@ -196,20 +190,26 @@ export const Sidebar = ({
 		{
 			path: "/leaderboard",
 			icon: "lucide:trophy",
-			label: "Leaderboard",
+			label: "Rank",
 			key: "leaderboard",
+		},
+		{
+			path: "/docs",
+			icon: "lucide:book-open",
+			label: "Doc",
+			key: "docs",
+		},
+		{
+			path: "/claim",
+			icon: "lucide:coins",
+			label: "Token Claimer",
+			key: "claim",
 		},
 		{
 			path: "/profile",
 			icon: "lucide:user",
 			label: "Profile",
 			key: "profile",
-		},
-		{
-			path: "/admin",
-			icon: "lucide:settings",
-			label: "Admin",
-			key: "admin",
 		},
 	];
 
@@ -418,7 +418,7 @@ export const Sidebar = ({
 							<Button isIconOnly size="sm" variant="light" aria-label="Help">
 								<Icon
 									icon="lucide:help-circle"
-									className="text-default-500"
+								 className="text-default-500"
 									width={14}
 									height={14}
 								/>

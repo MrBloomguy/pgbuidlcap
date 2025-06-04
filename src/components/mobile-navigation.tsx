@@ -22,18 +22,6 @@ const mobileLinks = [
     key: "search",
   },
   {
-    path: "/domains",
-    icon: "lucide:grid",
-    label: "Domain",
-    key: "domains",
-  },
-  {
-    path: "/leaderboard",
-    icon: "lucide:trophy",
-    label: "Ranks",
-    key: "leaderboard",
-  },
-  {
     path: "/profile",
     icon: "lucide:user",
     label: "Profile",

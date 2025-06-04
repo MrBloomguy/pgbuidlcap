@@ -136,15 +136,48 @@ export const TokenDetail: React.FC<TokenDetailProps> = ({ tokenId, onBack }) => 
             color="primary"
             variant="underlined"
             classNames={{
-              tabList: "gap-2",
+              tabList: "gap-1 tabs-container",
+              tab: "px-3 h-9 text-xs mobile-tab",
               cursor: "w-full",
-              tab: "px-2 py-1 text-xs"
+              tabContent: "group-data-[selected=true]:font-semibold"
             }}
           >
-            <Tab key="overview" title="Overview" />
-            <Tab key="chart" title="Chart" />
-            <Tab key="trades" title="Trades" />
-            <Tab key="holders" title="Holders" />
+            <Tab 
+              key="overview" 
+              title={
+                <div className="flex items-center gap-1.5">
+                  <Icon icon="lucide:layout-dashboard" width={14} height={14} />
+                  <span>Overview</span>
+                </div>
+              }
+            />
+            <Tab 
+              key="chart" 
+              title={
+                <div className="flex items-center gap-1.5">
+                  <Icon icon="lucide:line-chart" width={14} height={14} />
+                  <span>Chart</span>
+                </div>
+              }
+            />
+            <Tab 
+              key="trades" 
+              title={
+                <div className="flex items-center gap-1.5">
+                  <Icon icon="lucide:repeat" width={14} height={14} />
+                  <span>Trades</span>
+                </div>
+              }
+            />
+            <Tab 
+              key="holders" 
+              title={
+                <div className="flex items-center gap-1.5">
+                  <Icon icon="lucide:users" width={14} height={14} />
+                  <span>Holders</span>
+                </div>
+              }
+            />
             <Tab key="info" title="Info" />
           </Tabs>
           

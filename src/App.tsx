@@ -29,7 +29,7 @@ export default function App() {
   return (
     <WalletConnectProvider>
       <div className={theme === "dark" ? "dark" : ""}>
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="app-container min-h-screen bg-background text-foreground flex flex-col">
           {/* Fixed Header */}
           <Navbar 
             maxWidth="full" 
@@ -85,16 +85,17 @@ export default function App() {
                 </div>
               </NavbarItem>
               <NavbarItem>
+                
                 <Button
                   as="a"
                   href="https://github.com/youbuidlcap/youbuidl-social"
                   target="_blank"
                   variant="bordered"
                   size="sm"
-                  startContent={<Icon icon="lucide:github" width={16} height={16} />}
+                  startContent={<Icon icon="lucide:sparkles" width={16} height={16} />}
                   className="font-medium text-sm border-default-200 hover:bg-default-100"
                 >
-                  Star on GitHub
+                  Buidl AI
                 </Button>
               </NavbarItem>
             </NavbarContent>
@@ -109,19 +110,18 @@ export default function App() {
             </NavbarContent>
           </Navbar>
 
-          {/* Main Content Area with Fixed Sidebar */}
-          <div className="flex flex-1 overflow-hidden">
+          {/* Main Content */}
+          <main className="flex-1 flex overflow-hidden">
+            {/* Sidebar */}
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-            
-            {/* Scrollable Content */}
-            <main className="flex-1 overflow-y-auto min-h-0">
-              <div className="p-4 h-full flex flex-col">
-                <Routes />
-              </div>
-            </main>
-          </div>
-          
-          {/* Mobile Navigation - Bottom Bar */}
+
+            {/* Main Scrollable Area */}
+            <div className="flex-1 scrollable-content">
+              <Routes />
+            </div>
+          </main>
+
+          {/* Mobile Navigation */}
           {isMobile && <MobileNavigation />}
         </div>
       </div>

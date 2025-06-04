@@ -12,6 +12,8 @@ import { Icon } from "@iconify/react";
 import { Categories } from "./Categories";
 import { AdminDashboard } from "./admin-dashboard";
 import { PGAgentPage } from "./pgagent-page";
+import { DocsPage } from "./docs-page";
+import { TokenClaimerPage } from "./token-claimer-page";
 
 export const Routes: React.FC = () => {
   const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
@@ -66,12 +68,14 @@ export const Routes: React.FC = () => {
             </div>
           )
         } />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/:address" element={<ProfilePage />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/names" element={<DomainsPage />} />
         <Route path="/submit" element={<SubmitPage />} />
-        <Route path="/leaderboard" element={<Leaderboard onBack={() => {}} onSelectToken={setSelectedToken} />} />
-        <Route path="/domains" element={<DomainsPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/pgagent" element={<PGAgentPage />} />
+        <Route path="/docs" element={<DocsPage />} />
+        <Route path="/claim" element={<TokenClaimerPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Switch>
     </Router>
