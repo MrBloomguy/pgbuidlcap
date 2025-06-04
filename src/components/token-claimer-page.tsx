@@ -192,4 +192,3 @@ export const TokenClaimerPage = () => {
     </div>
   );
 };
-};

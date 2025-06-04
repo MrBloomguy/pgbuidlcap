@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Card, CardBody, Input, Button, Badge, Divider } from "@heroui/react";
+import React, { useState, useRef, useEffect } from "react";
+import { Input, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 interface Message {
@@ -12,6 +12,7 @@ interface Message {
 export const PGAgentPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -20,6 +21,14 @@ export const PGAgentPage = () => {
       timestamp: new Date().toISOString()
     }
   ]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -48,157 +57,93 @@ export const PGAgentPage = () => {
     }, 1000);
   };
 
+  useEffect(() => {
+    // Add a class to body to hide mobile nav
+    document.body.classList.add("hide-mobile-nav");
+    return () => {
+      document.body.classList.remove("hide-mobile-nav");
+    };
+  }, []);
+
   return (
-    <div className="container mx-auto p-4 min-h-[calc(100vh-4rem)] flex">
-      <div className="flex flex-1 gap-6">
-        {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col">
-          <Card className="flex-1 flex flex-col">
-            <CardBody className="flex-1 flex flex-col p-0">
-              {/* Header */}
-              <div className="p-4 border-b border-divider">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Icon icon="lucide:sparkles" className="text-primary" width={20} />
+    <div className="h-[100dvh] flex flex-col items-center justify-center dark:bg-[#343541] bg-white">
+      {/* Main Chat Area */}
+      <div className="flex-1 w-full flex flex-col items-center justify-center">
+        <div className="w-full max-w-2xl flex flex-col flex-1">
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto pt-8 pb-4 sm:pt-8 sm:pb-4 pt-2 pb-2">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} px-2 sm:px-4 mb-2`}
+              >
+                <div className={`flex gap-3 max-w-[90vw] sm:max-w-[80%] ${message.sender === "user" ? "flex-row-reverse" : ""}`}>
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Icon 
+                      icon={message.sender === "agent" ? "lucide:sparkles" : "lucide:user"} 
+                      className="text-primary"
+                      width={18} 
+                    />
                   </div>
-                  <div>
-                    <h3 className="font-semibold">Buidl AI</h3>
-                    <div className="flex items-center gap-2">
-                      <Badge color="success" variant="flat" size="sm">Active</Badge>
-                      <span className="text-default-400 text-xs">Response time: &lt; 1min</span>
+                  <div className={`rounded-xl px-4 py-3 text-sm whitespace-pre-line ${message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-content1 text-foreground"}`}>
+                    {message.content}
+                    <div className="mt-1 text-xs text-default-400 text-right">
+                      {new Date(message.timestamp).toLocaleTimeString()}
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`rounded-lg p-3 max-w-[80%] ${
-                        message.sender === "user"
-                          ? "bg-primary text-white"
-                          : "bg-default-100"
-                      }`}
+            ))}
+            {isLoading && (
+              <div className="flex justify-start px-2 sm:px-4 mb-2">
+                <div className="flex gap-3 max-w-[90vw] sm:max-w-[80%]">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Icon icon="lucide:sparkles" className="text-primary" width={18} />
+                  </div>
+                  <div className="rounded-xl px-4 py-3 bg-content1 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" />
+                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:0.2s]" />
+                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:0.4s]" />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+          {/* Input Area */}
+          <div className="w-full px-2 sm:px-4 pb-4 sm:pb-8">
+            <div className="relative">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Message Buidl AI..."
+                onKeyPress={(e) => e.key === "Enter" && handleSend()}
+                size="sm"
+                classNames={{
+                  input: "pr-24",
+                  innerWrapper: "pr-20"
+                }}
+                endContent={
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onPress={handleSend}
+                      isDisabled={!input.trim()}
                     >
-                      <p className="text-sm whitespace-pre-line">{message.content}</p>
-                      <span className="text-xs mt-1 opacity-70 block">
-                        {new Date(message.timestamp).toLocaleTimeString()}
-                      </span>
-                    </div>
+                      <Icon icon="lucide:send" className="text-primary" width={16} />
+                    </Button>
                   </div>
-                ))}
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-default-100 rounded-lg p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce" />
-                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:0.2s]" />
-                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:0.4s]" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Input Area */}
-              <div className="p-4 border-t border-divider">
-                <div className="flex gap-2">
-                  <Input
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask anything about public goods development..."
-                    onKeyPress={(e) => e.key === "Enter" && handleSend()}
-                    size="sm"
-                    endContent={
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onPress={handleSend}
-                        isDisabled={!input.trim()}
-                      >
-                        <Icon icon="lucide:send" className="text-primary" width={16} />
-                      </Button>
-                    }
-                  />
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="hidden md:flex flex-col gap-4 w-80">
-          {/* Capabilities */}
-          <Card>
-            <CardBody className="p-4">
-              <h3 className="font-semibold text-sm mb-3">AI Capabilities</h3>
-              <div className="space-y-3">
-                <div className="flex gap-2 items-center">
-                  <Icon icon="lucide:search" className="text-primary shrink-0" width={16} />
-                  <span className="text-default-500 text-sm">Grant Program Discovery</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <Icon icon="lucide:edit" className="text-primary shrink-0" width={16} />
-                  <span className="text-default-500 text-sm">Proposal Review & Feedback</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <Icon icon="lucide:lightbulb" className="text-primary shrink-0" width={16} />
-                  <span className="text-default-500 text-sm">Project Ideation</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <Icon icon="lucide:users" className="text-primary shrink-0" width={16} />
-                  <span className="text-default-500 text-sm">Builder Network Access</span>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardBody className="p-4">
-              <h3 className="font-semibold text-sm mb-3">Quick Actions</h3>
-              <div className="space-y-2">
-                <Button 
-                  className="w-full justify-start"
-                  variant="flat"
-                  size="sm"
-                  startContent={<Icon icon="lucide:compass" width={16} />}
-                >
-                  Browse Grant Programs
-                </Button>
-                <Button 
-                  className="w-full justify-start"
-                  variant="flat"
-                  size="sm"
-                  startContent={<Icon icon="lucide:file-text" width={16} />}
-                >
-                  Create New Proposal
-                </Button>
-                <Button 
-                  className="w-full justify-start"
-                  variant="flat"
-                  size="sm"
-                  startContent={<Icon icon="lucide:users" width={16} />}
-                >
-                  Find Collaborators
-                </Button>
-                <Button 
-                  className="w-full justify-start"
-                  variant="flat"
-                  size="sm"
-                  startContent={<Icon icon="lucide:book-open" width={16} />}
-                >
-                  View Resources
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
+                }
+              />
+            </div>
+            <div className="mt-2 text-center">
+              <span className="text-tiny text-default-400">
+                Buidl AI can make mistakes. Consider verifying important information.
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

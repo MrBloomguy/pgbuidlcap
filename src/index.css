@@ -759,3 +759,11 @@ body::-webkit-scrollbar-thumb:hover {
 .stats-slider-active {
   overscroll-behavior-y: contain;
 }
+
+/* Hide only the mobile navigation bar at the footer when .hide-mobile-nav is present on body */
+body.hide-mobile-nav .mobile-navigation,
+body.hide-mobile-nav [data-mobile-nav],
+body.hide-mobile-nav .MobileNavigation,
+body.hide-mobile-nav nav.fixed.bottom-0 {
+  display: none !important;
+}
