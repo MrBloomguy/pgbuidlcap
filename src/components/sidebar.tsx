@@ -1,6 +1,7 @@
 import React from "react";
 import { Button, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { Link, useLocation } from "react-router-dom";
 
 // Grants ecosystems organized by L1s, L2s, and infrastructure
 const networksList = [
@@ -152,6 +153,9 @@ export const Sidebar = ({
 	isOpen: boolean;
 	onClose: () => void;
 }) => {
+	const location = useLocation();
+	const currentPath = location.pathname;
+
 	const [visibleNetworks, setVisibleNetworks] = React.useState(5);
 	const [isLoadingMore, setIsLoadingMore] = React.useState(false);
 	const [searchQuery, setSearchQuery] = React.useState("");

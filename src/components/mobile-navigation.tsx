@@ -1,6 +1,6 @@
 import React from "react";
 import { Icon } from "@iconify/react";
-import { Link } from "@heroui/react";
+import { Link, useLocation } from "react-router-dom";
 
 const mobileLinks = [
   {
@@ -30,51 +30,30 @@ const mobileLinks = [
 ];
 
 export const MobileNavigation = () => {
-  const [activeTab, setActiveTab] = React.useState("markets");
-  
-  const handleTabChange = (path: string, key: string) => {
-    setActiveTab(key);
-    const event = new CustomEvent('mobileNavChange', { detail: { tab: key } });
-    window.dispatchEvent(event);
-  };
+  const location = useLocation();
+  const currentPath = location.pathname;
   
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/70 backdrop-blur-md border-t border-divider z-50 h-12 md:hidden">
-      <div className="flex items-center justify-around h-full max-w-lg mx-auto px-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-divider z-50 py-1 px-2">
+      <div className="flex justify-around items-center">
         {mobileLinks.map((link) => (
-          <button
+          <Link
             key={link.key}
-            className="h-full"
-            onClick={(e) => {
-              e.preventDefault();
-              handleTabChange(link.path, link.key);
-            }}
+            to={link.path}
+            className={`flex flex-col items-center p-2 min-w-[64px] ${
+              currentPath === link.path ? "text-primary" : "text-default-500"
+            }`}
           >
-            <NavButton 
-              icon={link.icon}
-              label={link.label}
-              isActive={activeTab === link.key}
+            <Icon 
+              icon={link.icon} 
+              width={20} 
+              height={20} 
+              className={currentPath === link.path ? "text-primary" : ""} 
             />
-          </button>
+            <span className="text-xs mt-1">{link.label}</span>
+          </Link>
         ))}
       </div>
     </nav>
   );
 };
-
-interface NavButtonProps {
-  icon: string;
-  label: string;
-  isActive: boolean;
-}
-
-const NavButton = ({ icon, label, isActive }: NavButtonProps) => (
-  <div className="flex flex-col items-center justify-center w-12 h-full">
-    <div className={`flex items-center justify-center transition-colors ${isActive ? 'text-primary' : 'text-default-500'}`}>
-      <Icon icon={icon} width={18} height={18} />
-    </div>
-    <span className={`text-[10px] mt-0.5 transition-colors ${isActive ? 'text-primary' : 'text-default-500'}`}>
-      {label}
-    </span>
-  </div>
-);

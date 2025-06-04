@@ -1,65 +1,108 @@
 import React from "react";
-import { Card, CardBody, Button, Input, Progress, Badge } from "@heroui/react";
+import { Card, CardBody, Button, Input, Progress, Badge, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
+
+interface Message {
+  id: number;
+  sender: "user" | "agent";
+  content: string;
+  timestamp: string;
+}
 
 export const TokenClaimerPage = () => {
   const [isLoading, setIsLoading] = React.useState(false);
-  const [claimAmount, setClaimAmount] = React.useState("");
-
-  const handleClaim = async () => {
-    setIsLoading(true);
-    try {
-      // Implement token claiming logic here
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert("Tokens claimed successfully!");
-    } catch (error) {
-      console.error("Failed to claim tokens:", error);
-      alert("Failed to claim tokens. Please try again.");
-    } finally {
-      setIsLoading(false);
+  const [input, setInput] = React.useState("");
+  const [messages, setMessages] = React.useState<Message[]>([
+    {
+      id: 1,
+      sender: "agent",
+      content: "👋 Welcome to YBLD Token Claimer! I'm here to help you claim your YBLD tokens. Would you like to check your eligibility or start the claim process?",
+      timestamp: new Date().toISOString()
     }
+  ]);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    const userMessage: Message = {
+      id: messages.length + 1,
+      sender: "user",
+      content: input.trim(),
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+
+    // Simulate agent response
+    setTimeout(() => {
+      const agentMessage: Message = {
+        id: messages.length + 2,
+        sender: "agent",
+        content: "I can help you with that! First, let me check your eligibility for the YBLD token claim.",
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, agentMessage]);
+      setIsLoading(false);
+    }, 1000);
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-5xl">
-      {/* Hero Section */}
-      <div className="text-center mb-8 space-y-3">
-        <h1 className="text-3xl font-bold">YouBuidl Token Claim</h1>
-        <p className="text-default-600 max-w-2xl mx-auto">
-          Claim your YBLD tokens and join the YouBuidl DAO
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Main Claim Card */}
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardBody className="p-6 space-y-6">
-              {/* Token Info */}
-              <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 min-h-[calc(100vh-4rem)] flex">
+      <div className="flex flex-1 gap-6">
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col">
+            <CardBody className="flex-1 flex flex-col p-0">
+              {/* Header */}
+              <div className="p-4 border-b border-divider">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Icon icon="lucide:coins" className="text-primary" width={24} height={24} />
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Icon icon="lucide:coins" className="text-primary" width={20} />
                   </div>
                   <div>
-                    <h3 className="font-semibold">YBLD Token</h3>
-                    <p className="text-default-500 text-sm">YouBuidl Governance Token</p>
+                    <h3 className="font-semibold">YBLD Token Assistant</h3>
+                    <div className="flex items-center gap-2">
+                      <Badge color="success" variant="flat" size="sm">Active</Badge>
+                      <span className="text-default-400 text-xs">Response time: &lt; 1min</span>
+                    </div>
                   </div>
                 </div>
-                <Badge color="success" variant="flat">Active</Badge>
               </div>
 
-              {/* Claim Progress */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Total Claimed</span>
-                  <span className="font-semibold">5,000 / 10,000 YBLD</span>
-                </div>
-                <Progress 
-                  value={50}
-                  className="h-2"
-                  color="primary"
-                />
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`rounded-lg p-3 max-w-[80%] ${
+                        message.sender === "user"
+                          ? "bg-primary text-white"
+                          : "bg-default-100"
+                      }`}
+                    >
+                      <p className="text-sm">{message.content}</p>
+                      <span className="text-xs mt-1 opacity-70 block">
+                        {new Date(message.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-default-100 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce" />
+                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:0.2s]" />
+                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:0.4s]" />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Claim Form */}
@@ -67,45 +110,23 @@ export const TokenClaimerPage = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Amount to Claim</label>
                   <Input
-                    value={claimAmount}
-                    onChange={(e) => setClaimAmount(e.target.value)}
-                    type="number"
-                    placeholder="Enter amount"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Type your message..."
+                    onKeyPress={(e) => e.key === "Enter" && handleSend()}
                     size="sm"
-                    startContent={
-                      <div className="pointer-events-none">
-                        <Icon icon="lucide:coins" className="text-default-400" width={16} />
-                      </div>
-                    }
                     endContent={
-                      <div className="pointer-events-none">
-                        <span className="text-default-400 text-sm">YBLD</span>
-                      </div>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={handleSend}
+                        isDisabled={!input.trim()}
+                      >
+                        <Icon icon="lucide:send" className="text-primary" width={16} />
+                      </Button>
                     }
                   />
-                </div>
-
-                <Button
-                  className="w-full"
-                  color="primary"
-                  size="lg"
-                  isLoading={isLoading}
-                  onPress={handleClaim}
-                >
-                  {isLoading ? "Claiming..." : "Claim Tokens"}
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* Transaction History */}
-          <Card>
-            <CardBody className="p-6">
-              <h3 className="font-semibold mb-4">Recent Transactions</h3>
-              <div className="space-y-4">
-                <div className="text-center text-default-500 py-8">
-                  <Icon icon="lucide:inbox" className="mx-auto mb-2" width={24} />
-                  <p>No transactions yet</p>
                 </div>
               </div>
             </CardBody>
@@ -113,23 +134,34 @@ export const TokenClaimerPage = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="hidden md:flex flex-col gap-4 w-80">
           {/* Token Stats */}
           <Card>
-            <CardBody className="p-6 space-y-4">
-              <h3 className="font-semibold">Token Stats</h3>
+            <CardBody className="p-4">
+              <h3 className="font-semibold text-sm mb-3">Token Stats</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-default-500">Price</span>
-                  <span className="font-medium">$1.20</span>
+                  <span className="text-default-500 text-sm">Claimed</span>
+                  <span className="font-medium text-sm">5,000 YBLD</span>
+                </div>
+                <Progress 
+                  value={50}
+                  size="sm"
+                  color="primary"
+                  className="h-1"
+                />
+                <div className="flex justify-between text-xs text-default-400">
+                  <span>50% Claimed</span>
+                  <span>10,000 Total</span>
+                </div>
+                <Divider className="my-3" />
+                <div className="flex justify-between items-center">
+                  <span className="text-default-500 text-sm">Price</span>
+                  <span className="font-medium text-sm">$1.20</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-default-500">Market Cap</span>
-                  <span className="font-medium">$12M</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-default-500">Total Supply</span>
-                  <span className="font-medium">10M YBLD</span>
+                  <span className="text-default-500 text-sm">Market Cap</span>
+                  <span className="font-medium text-sm">$12M</span>
                 </div>
               </div>
             </CardBody>
