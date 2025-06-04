@@ -15,113 +15,123 @@ interface CommentItemProps {
   comment: Comment;
   onReply: (commentId: string) => void;
   onLike: (commentId: string) => void;
+  isLast?: boolean;
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, onReply, onLike }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, onReply, onLike, isLast = false }) => {
+  const formattedDate = new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
+    Math.floor((new Date(comment.timestamp).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+    'day'
+  );
+
+  const handleReplyClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    onReply(comment.id);
+  };
+
+  const handleLikeClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    onLike(comment.id);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.2 }}
-      className="flex gap-3 py-3 hover:bg-default-100 rounded-lg px-3 transition-colors group"
+      className="relative"
     >
-      <Avatar
-        src={comment.author.avatar}
-        fallback={comment.author.address.substring(0, 2)}
-        className="w-8 h-8 text-xs bg-primary text-primary-foreground"
-      />
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-medium hover:text-primary transition-colors">
-            {comment.author.ensName || 
-             `${comment.author.address.substring(0, 6)}...${comment.author.address.substring(-4)}`}
-          </span>
-          <span className="text-xs text-default-400">
-            {new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
-              Math.floor((new Date(comment.timestamp).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-              'day'
-            )}
-          </span>
+      <div className="flex gap-3 py-3 px-4 hover:bg-default-100/50 transition-colors">
+        <div className="flex flex-col items-center">
+          <Avatar
+            src={comment.author.avatar}
+            fallback={comment.author.address.substring(0, 2)}
+            className="w-10 h-10 text-sm bg-primary text-primary-foreground"
+            radius="full"
+          />
+          {!isLast && (
+            <div className="w-0.5 flex-1 bg-neutral-200 dark:bg-neutral-800 mt-2" />
+          )}
         </div>
-        <p className="text-sm mb-2 whitespace-pre-wrap">{comment.content}</p>
-        <div className="flex items-center gap-4 opacity-80 group-hover:opacity-100 transition-opacity">
-          <Button
-            size="sm"
-            variant={comment.hasLiked ? "flat" : "light"}
-            color={comment.hasLiked ? "primary" : "default"}
-            startContent={
-              <Icon 
-                icon={comment.hasLiked ? "lucide:heart-fill" : "lucide:heart"} 
-                className={comment.hasLiked ? "text-primary-foreground" : ""}
-              />
-            }
-            onClick={() => onLike(comment.id)}
-            className="transition-all duration-200 hover:scale-105"
-          >
-            {comment.likes || 0}
-          </Button>
-          <Button
-            size="sm"
-            variant="light"
-            startContent={<Icon icon="lucide:message-circle" />}
-            onClick={() => onReply(comment.id)}
-            className="transition-all duration-200 hover:scale-105"
-          >
-            Reply
-          </Button>
-        </div>
-        <AnimatePresence>
-        {comment.replies && comment.replies.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="ml-4 mt-3 border-l-2 pl-4 border-primary/20">
-            {comment.replies.map(reply => (
-              <CommentItem
-                key={reply.id}
-                comment={reply}
-                onReply={onReply}
-                onLike={onLike}
-              />
-            ))}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="font-semibold text-[15px] hover:underline cursor-pointer">
+              {comment.author.ensName || 
+               `${comment.author.address.substring(0, 6)}...${comment.author.address.substring(-4)}`}
+            </span>
+            <span className="text-neutral-500 text-[15px]">·</span>
+            <span className="text-neutral-500 text-[15px] hover:underline cursor-pointer">
+              {formattedDate}
+            </span>
           </div>
-        )}
+          <p className="text-[15px] whitespace-pre-wrap mt-0.5 mb-2">{comment.content}</p>
+          <div className="flex items-center -ml-2">
+            <Button
+              className="group gap-2 h-9 px-2 text-neutral-500"
+              size="sm"
+              variant="light"
+              onPress={handleReplyClick}
+            >
+              <Icon 
+                icon="lucide:message-circle" 
+                width={18}
+                className="group-hover:text-[#1d9bf0] transition-colors"
+              />
+              <span className="text-sm">{comment.replies?.length || 0}</span>
+            </Button>
+
+            <Button
+              className={`group gap-2 h-9 px-2 ${comment.hasLiked ? "text-[#f91880]" : "text-neutral-500"}`}
+              size="sm"
+              variant="light"
+              onPress={handleLikeClick}
+            >
+              <Icon 
+                icon={comment.hasLiked ? "lucide:heart-fill" : "lucide:heart"}
+                width={18}
+                className="group-hover:text-[#f91880] transition-colors"
+              />
+              <span className="text-sm">{comment.likes || 0}</span>
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
+
+      {comment.replies && comment.replies.length > 0 && (
+        <div className="ml-[52px]">
+          {comment.replies.map((reply, index) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              onReply={onReply}
+              onLike={onLike}
+              isLast={index === comment.replies!.length - 1}
+            />
+          ))}
+        </div>
+      )}
+    </motion.div>
   );
 };
 
 export const CommentSection: React.FC<CommentSectionProps> = ({ domainId }) => {
   const { address } = useAccount();
-  const [newComment, setNewComment] = React.useState('');
-  const [replyTo, setReplyTo] = React.useState<string | null>(null);
-  const {
-    comments,
-    isLoading,
-    loadComments,
-    addComment,
-    addReply,
-    likeComment,
-    loadDomainInteractions,
-  } = useSocialInteractions();
+  const [newComment, setNewComment] = useState('');
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const { comments, isLoading, loadComments, addComment, addReply, likeComment } = useSocialInteractions();
 
   useEffect(() => {
     loadComments(domainId);
-    loadDomainInteractions(domainId);
-  }, [domainId, loadComments, loadDomainInteractions]);
+  }, [domainId, loadComments]);
 
-  const handleSubmitComment = async () => {
+  const handleSubmitComment = useCallback(async () => {
     if (!address) {
       toast.error('Please connect your wallet to comment');
       return;
     }
 
-    if (!newComment.trim()) {
-      toast.error('Please enter a comment');
-      return;
-    }
+    if (!newComment.trim()) return;
 
     try {
       if (replyTo) {
@@ -132,15 +142,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ domainId }) => {
       setNewComment('');
       setReplyTo(null);
     } catch (error) {
-      console.error('Failed to submit comment:', error);
+      toast.error('Failed to post comment');
     }
-  };
+  }, [address, domainId, newComment, replyTo, addComment, addReply]);
 
   const handleReply = (commentId: string) => {
-    if (!address) {
-      toast.error('Please connect your wallet to reply');
-      return;
-    }
     setReplyTo(commentId);
   };
 
@@ -149,100 +155,83 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ domainId }) => {
       toast.error('Please connect your wallet to like comments');
       return;
     }
-    await likeComment(commentId);
+
+    try {
+      await likeComment(domainId, commentId);
+    } catch (error) {
+      toast.error('Failed to like comment');
+    }
   };
 
-  const domainComments = comments[domainId] || [];
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
-    <Card className="mt-6">
-      <CardBody className="space-y-4">
-        <h3 className="text-lg font-semibold">Comments</h3>
-        
-        <div className="space-y-2">
-          {replyTo && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-2 p-2 bg-primary/5 rounded-lg"
-            >
-              <Icon icon="lucide:corner-up-left" className="text-primary" />
-              <span className="text-sm">Replying to comment</span>
-              <Button
-                size="sm"
-                variant="light"
-                onClick={() => setReplyTo(null)}
-                isIconOnly
-                className="ml-auto"
-              >
-                <Icon icon="lucide:x" />
-              </Button>
-            </motion.div>
-          )}
-          <Textarea
-            placeholder={replyTo ? "Write a reply..." : "Share your thoughts..."}
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            minRows={2}
-            className="focus:border-primary"
+    <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
+      <div className="p-4">
+        <div className="flex gap-3">
+          <Avatar
+            src={address ? `https://avatar.vercel.sh/${address}` : undefined}
+            fallback="?"
+            className="w-10 h-10"
+            radius="full"
           />
-          <div className="flex justify-end items-center gap-2">
-            <Button
-              color="primary"
-              size="sm"
-              onClick={handleSubmitComment}
-              isDisabled={!address || !newComment.trim()}
-              startContent={<Icon icon={replyTo ? "lucide:corner-up-left" : "lucide:message-circle"} />}
-            >
-              {replyTo ? 'Reply' : 'Comment'}
-            </Button>
+          <div className="flex-1">
+            <Textarea
+              placeholder="Post your reply"
+              value={newComment}
+              onValueChange={setNewComment}
+              classNames={{
+                base: "w-full",
+                input: "text-[17px] min-h-[120px] p-0 border-none bg-transparent focus:ring-0 placeholder:text-neutral-500",
+              }}
+              minRows={2}
+              maxRows={6}
+            />
+            {replyTo && (
+              <div className="flex items-center gap-2 mt-2 p-2 rounded-md bg-default-100/50">
+                <span className="text-sm text-neutral-500">Replying to comment</span>
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  onPress={() => setReplyTo(null)}
+                  className="ml-auto"
+                >
+                  <Icon icon="lucide:x" width={16} />
+                </Button>
+              </div>
+            )}
+            <div className="flex justify-end mt-3">
+              <Button
+                className="bg-[#1d9bf0] text-white font-semibold hover:bg-[#1a8cd8] rounded-full px-5"
+                size="lg"
+                isDisabled={!address || !newComment.trim()}
+                onPress={handleSubmitComment}
+              >
+                {replyTo ? 'Reply' : 'Post'}
+              </Button>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="space-y-2">
-          <AnimatePresence mode="wait">
-            {isLoading[`comments:${domainId}`] ? (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-8 gap-4"
-              >
-                <Spinner size="lg" color="primary" />
-                <span className="text-sm text-default-400">Loading comments...</span>
-              </motion.div>
-            ) : domainComments.length > 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                {domainComments.map(comment => (
-                  <CommentItem
-                    key={comment.id}
-                    comment={comment}
-                    onReply={handleReply}
-                    onLike={handleLike}
-                  />
-                ))}
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-8 gap-4"
-              >
-                <Icon icon="lucide:message-circle" className="w-12 h-12 text-default-300" />
-                <p className="text-center text-default-400">
-                  No comments yet. Be the first to share your thoughts!
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </CardBody>
-    </Card>
+      <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
+        {comments.map((comment, index) => (
+          <CommentItem
+            key={comment.id}
+            comment={comment}
+            onReply={handleReply}
+            onLike={handleLike}
+            isLast={index === comments.length - 1}
+          />
+        ))}
+      </div>
+    </div>
   );
 };
