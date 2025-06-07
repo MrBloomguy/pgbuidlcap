@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes as Switch, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes as Switch, Route, Navigate, useLocation, useParams, useNavigate } from "react-router-dom";
 import { MarketStats } from "./market-stats";
 import { ProjectList } from "./project-list";
 import { TokenDetail } from "./token-detail";
@@ -186,6 +186,13 @@ export const Routes: React.FC = () => {
     </div>
   );
 
+  const PgTokenFunTokenDetailWrapper = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    if (!id) return null;
+    return <TokenDetail tokenId={id} onBack={() => navigate('/pgtoken.fun')} />;
+  };
+
   return (
     <Switch>
       <Route path="/" element={
@@ -223,6 +230,7 @@ export const Routes: React.FC = () => {
       <Route path="/search" element={<BuidlAgentPage />} />
       <Route path="/pgtoken-fun" element={<PgTokenFun />} />
       <Route path="/pgtoken.fun" element={<PgTokenFun />} />
+      <Route path="/pgtoken.fun/:id" element={<PgTokenFunTokenDetailWrapper />} />
       <Route path="*" element={<Navigate to="/explore" replace />} />
     </Switch>
   );

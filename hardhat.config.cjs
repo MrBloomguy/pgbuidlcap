@@ -1,15 +1,12 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import * as dotenv from "dotenv";
+const { config: dotenvConfig } = require("dotenv");
+dotenvConfig();
 
-dotenv.config();
+require("@nomicfoundation/hardhat-toolbox");
 
-// Make sure these environment variables are set in your .env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
-const BASE_RPC_URL = process.env.BASE_RPC_URL || "";
 const OPTIMISM_SEPOLIA_RPC_URL = process.env.OPTIMISM_SEPOLIA_RPC_URL || "";
 
-const config: HardhatUserConfig = {
+module.exports = {
   solidity: {
     version: "0.8.19",
     settings: {
@@ -20,10 +17,6 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    base: {
-      url: BASE_RPC_URL,
-      accounts: [PRIVATE_KEY],
-    },
     optimism_sepolia: {
       url: OPTIMISM_SEPOLIA_RPC_URL,
       accounts: [PRIVATE_KEY],
@@ -32,17 +25,9 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      base: process.env.BASESCAN_API_KEY || "",
+      optimism_sepolia: process.env.OPTIMISM_API_KEY || "",
     },
     customChains: [
-      {
-        network: "base",
-        chainId: 8453,
-        urls: {
-          apiURL: "https://api.basescan.org/api",
-          browserURL: "https://basescan.org",
-        },
-      },
       {
         network: "optimism_sepolia",
         chainId: 11155420,
@@ -54,5 +39,3 @@ const config: HardhatUserConfig = {
     ],
   },
 };
-
-export default config;

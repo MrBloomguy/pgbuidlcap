@@ -1,6 +1,6 @@
 import React from 'react';
 import { Chain, WagmiConfig } from 'wagmi';
-import { mainnet, polygon, optimism, arbitrum } from 'wagmi/chains';
+import { mainnet, polygon, optimism, optimismSepolia, arbitrum } from 'wagmi/chains';
 import { getDefaultWallets, RainbowKitProvider, ConnectButton } from '@rainbow-me/rainbowkit';
 import { configureChains, createConfig } from 'wagmi';
 import { publicProvider } from 'wagmi/providers/public';
@@ -17,7 +17,7 @@ const metadata = {
   icons: ['/youbuidlsocialsvg.svg']
 };
 
-const chains = [mainnet, polygon, optimism, arbitrum];
+const chains = [mainnet, polygon, optimism, optimismSepolia, arbitrum];
 
 const { publicClient } = configureChains(
   chains,
@@ -119,6 +119,11 @@ export const WalletConnectProvider: React.FC<{ children: React.ReactNode }> = ({
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider 
           chains={chains}
+          showRecentTransactions
+          appInfo={{ appName: metadata.name }}
+          modalSize="compact"
+          initialChain={optimismSepolia}
+          enableNetworkView
           theme={{
             colors: {
               accentColor: '#CDEB63',
@@ -137,6 +142,7 @@ export const WalletConnectProvider: React.FC<{ children: React.ReactNode }> = ({
               connectButton: '0px 4px 12px rgba(0, 0, 0, 0.1)'
             }
           }}
+          enableTestnets
         >
           {children}
         </RainbowKitProvider>
