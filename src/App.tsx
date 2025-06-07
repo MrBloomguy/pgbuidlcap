@@ -2,7 +2,7 @@ import React from "react";
 import { useTheme } from "@heroui/use-theme";
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { BrowserRouter, Link } from "react-router-dom";
+import { BrowserRouter, Link, useNavigate } from "react-router-dom";
 import { WalletConnectButton } from "./components/wallet-connect";
 import { TokenTable } from "./components/token-table";
 import { Sidebar } from "./components/sidebar";
@@ -12,6 +12,20 @@ import { MobileNavigation } from "./components/mobile-navigation";
 import { Routes } from "./components/routes";
 import { WalletConnectProvider } from "./components/wallet-connect";
 import { Categories } from "./components/Categories";
+
+function ProfileNavButton() {
+  const navigate = useNavigate();
+  return (
+    <Button
+      isIconOnly
+      variant="light"
+      aria-label="Profile"
+      onClick={() => navigate("/profile")}
+    >
+      <Icon icon="lucide:user" width={20} height={20} />
+    </Button>
+  );
+}
 
 export default function App() {
   const { theme } = useTheme();
@@ -103,6 +117,9 @@ export default function App() {
               <NavbarContent justify="end" className="gap-2">
                 <NavbarItem className="hidden md:flex">
                   <ThemeSwitcher />
+                </NavbarItem>
+                <NavbarItem className="hidden md:flex">
+                  <ProfileNavButton />
                 </NavbarItem>
                 <NavbarItem>
                   <WalletConnectButton />

@@ -1,7 +1,7 @@
 import React from "react";
 import { Button, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 // Grants ecosystems organized by L1s, L2s, and infrastructure
 const networksList = [
@@ -146,6 +146,45 @@ const networksList = [
 	},
 ];
 
+const pagesList = [
+	{
+		path: "/explore",
+		icon: "lucide:compass",
+		label: "Explore",
+		key: "explore",
+	},
+	{
+		path: "/submit",
+		icon: "lucide:plus-circle",
+		label: "Submit Project",
+		key: "submit",
+	},
+	{
+		path: "/leaderboard",
+		icon: "lucide:trophy",
+		label: "Rank",
+		key: "leaderboard",
+	},
+	{
+		path: "/docs",
+		icon: "lucide:book-open",
+		label: "Doc",
+		key: "docs",
+	},
+	{
+		path: "/profile",
+		icon: "lucide:user",
+		label: "Profile",
+		key: "profile",
+	},
+	{
+		path: "/pgtoken.fun",
+		icon: "lucide:rocket",
+		label: "pgtoken.fun",
+		key: "pgtokenfun",
+	},
+];
+
 export const Sidebar = ({
 	isOpen,
 	onClose,
@@ -154,6 +193,7 @@ export const Sidebar = ({
 	onClose: () => void;
 }) => {
 	const location = useLocation();
+	const navigate = useNavigate();
 	const currentPath = location.pathname;
 
 	const [visibleNetworks, setVisibleNetworks] = React.useState(5);
@@ -172,50 +212,22 @@ export const Sidebar = ({
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
 
-	const pagesList = [
-		{
-			path: "/explore",
-			icon: "lucide:compass",
-			label: "Explore",
-			key: "explore",
-		},
-		{
-			path: "/submit",
-			icon: "lucide:plus-circle",
-			label: "Submit Project",
-			key: "submit",
-		},
-		{
-			path: "/domains",
-			icon: "lucide:grid",
-			label: "Domains",
-			key: "domains",
-		},
-		{
-			path: "/leaderboard",
-			icon: "lucide:trophy",
-			label: "Rank",
-			key: "leaderboard",
-		},
-		{
-			path: "/docs",
-			icon: "lucide:book-open",
-			label: "Doc",
-			key: "docs",
-		},
-		{
-			path: "/claim",
-			icon: "lucide:coins",
-			label: "Token Claimer",
-			key: "claim",
-		},
-		{
-			path: "/profile",
-			icon: "lucide:user",
-			label: "Profile",
-			key: "profile",
-		},
-	];
+	// Remove duplicate useEffect and fix activeRoute logic
+	React.useEffect(() => {
+		// Try to match exact path first
+		let found = pagesList.find((page) => location.pathname === page.path);
+		if (!found) {
+			// Find all pages whose path is a prefix of the current path
+			const prefixMatches = pagesList.filter((page) => location.pathname.startsWith(page.path));
+			// Pick the longest prefix (most specific route)
+			if (prefixMatches.length > 0) {
+				found = prefixMatches.reduce((prev, curr) =>
+					curr.path.length > prev.path.length ? curr : prev
+				);
+			}
+		}
+		setActiveRoute(found ? found.key : "explore");
+	}, [location.pathname]);
 
 	const loadMoreNetworks = () => {
 		setIsLoadingMore(true);
@@ -244,13 +256,6 @@ export const Sidebar = ({
 		if (bottom && !isLoadingMore) {
 			loadMoreNetworks();
 		}
-	};
-
-	const handleNavigation = (route: string) => {
-		const event = new CustomEvent("mobileNavChange", {
-			detail: { tab: route.toLowerCase() },
-		});
-		window.dispatchEvent(event);
 	};
 
 	const NetworksSection = () => {
@@ -325,7 +330,7 @@ export const Sidebar = ({
 						}`}
 						onClick={() => {
 							setActiveRoute(page.key);
-							handleNavigation(page.key);
+							navigate(page.path); // Use React Router navigation
 							if (window.innerWidth < 768) {
 								onClose();
 							}
@@ -401,7 +406,7 @@ export const Sidebar = ({
 							>
 								<Icon
 									icon="lucide:chevron-down"
-									className="text-default-500"
+								 className="text-default-500"
 									width={12}
 									height={12}
 								/>

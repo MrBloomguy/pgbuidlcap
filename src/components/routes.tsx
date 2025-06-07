@@ -11,10 +11,10 @@ import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Categories } from "./Categories";
 import { AdminDashboard } from "./admin-dashboard";
-import { PGAgentPage } from "./pgagent-page";
+import BuidlAgentPage from "./Buidl-agent";
 import { DocsPage } from "./docs-page";
-import { TokenClaimerPage } from "./token-claimer-page";
 import { ProjectDetail } from "./project-detail";
+import PgTokenFun from "./pgtoken-fun";
 
 export const Routes: React.FC = () => {
   const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
@@ -209,7 +209,7 @@ export const Routes: React.FC = () => {
           </div>
         )
       } />
-      <Route path="/profile/:address" element={<ProfilePage />} />
+      <Route path="/profile" element={<ProfilePage />} />
       <Route path="/leaderboard" element={
         <Leaderboard 
           onBack={() => null} 
@@ -219,9 +219,10 @@ export const Routes: React.FC = () => {
       <Route path="/names" element={<DomainsPage />} />
       <Route path="/submit" element={<SubmitPage />} />
       <Route path="/docs" element={<DocsPage />} />
-      <Route path="/claim" element={<TokenClaimerPage />} />
       <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/search" element={<PGAgentPage />} />
+      <Route path="/search" element={<BuidlAgentPage />} />
+      <Route path="/pgtoken-fun" element={<PgTokenFun />} />
+      <Route path="/pgtoken.fun" element={<PgTokenFun />} />
       <Route path="*" element={<Navigate to="/explore" replace />} />
     </Switch>
   );
