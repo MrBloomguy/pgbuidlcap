@@ -355,13 +355,13 @@ export const Sidebar = ({
 			{/* Backdrop overlay on mobile */}
 			{isOpen && (
 				<div 
-					className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+					className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden top-12"
 					onClick={onClose}
 				/>
 			)}
 			
 			<aside
-				className={`fixed md:relative w-64 md:w-48 bg-background border-r border-divider h-full overflow-y-auto flex flex-col transition-all duration-300 z-50 ${
+				className={`fixed top-12 left-0 w-64 md:w-48 bg-background border-r border-divider bottom-0 overflow-y-auto flex flex-col transition-all duration-300 z-40 ${
 					isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
 				}`}
 			>

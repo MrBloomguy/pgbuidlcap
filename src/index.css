@@ -767,3 +767,28 @@ body.hide-mobile-nav .MobileNavigation,
 body.hide-mobile-nav nav.fixed.bottom-0 {
   display: none !important;
 }
+
+/* Fixed header and sidebar layout */
+.app-container {
+  height: 100vh;
+}
+
+/* Handle content spacing with fixed sidebar */
+@media (min-width: 768px) {
+  .scrollable-content {
+    margin-left: 12rem; /* 48px * 3 = 12rem (same as md:w-48 on sidebar) */
+  }
+}
+
+/* Mobile bottom spacing for navigation */
+@media (max-width: 767px) {
+  .scrollable-content {
+    padding-bottom: 4rem; /* Space for mobile navigation */
+  }
+}
+
+/* Prevent content from going under fixed header */
+.scrollable-content {
+  padding-top: env(safe-area-inset-top, 0px);
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}

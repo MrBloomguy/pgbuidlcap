@@ -49,7 +49,7 @@ export default function App() {
             {/* Fixed Header */}
             <Navbar 
               maxWidth="full" 
-              className="border-b border-divider h-12 bg-background/70 backdrop-blur-md"
+              className="fixed top-0 left-0 right-0 border-b border-divider h-12 bg-background/70 backdrop-blur-md z-50"
               isBordered
             >
               <NavbarContent justify="start">
@@ -128,13 +128,15 @@ export default function App() {
             </Navbar>
 
             {/* Main Content */}
-            <main className="flex-1 flex overflow-hidden">
+            <main className="flex-1 flex overflow-hidden pt-12">
               {/* Sidebar */}
               <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
               {/* Main Scrollable Area */}
-              <div className="flex-1 scrollable-content">
-                <Routes />
+              <div className="flex-1 overflow-y-auto relative ml-0 md:ml-48">
+                <div className="p-4">
+                  <Routes />
+                </div>
               </div>
             </main>
 

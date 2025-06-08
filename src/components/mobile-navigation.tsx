@@ -34,7 +34,7 @@ export const MobileNavigation = () => {
   const currentPath = location.pathname;
   
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-divider z-50 py-1 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-md border-t border-divider z-50 py-1 px-2 md:hidden">
       <div className="flex justify-around items-center">
         {mobileLinks.map((link) => (
           <Link

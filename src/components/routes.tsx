@@ -15,6 +15,7 @@ import BuidlAgentPage from "./Buidl-agent";
 import { DocsPage } from "./docs-page";
 import { ProjectDetail } from "./project-detail";
 import PgTokenFun from "./pgtoken-fun";
+import { CreateCoinPage } from "./create-coin-page";
 
 export const Routes: React.FC = () => {
   const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
@@ -230,6 +231,7 @@ export const Routes: React.FC = () => {
       <Route path="/search" element={<BuidlAgentPage />} />
       <Route path="/pgtoken-fun" element={<PgTokenFun />} />
       <Route path="/pgtoken.fun" element={<PgTokenFun />} />
+      <Route path="/pgtoken.fun/create" element={<CreateCoinPage />} />
       <Route path="/pgtoken.fun/:id" element={<PgTokenFunTokenDetailWrapper />} />
       <Route path="*" element={<Navigate to="/explore" replace />} />
     </Switch>

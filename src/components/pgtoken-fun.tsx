@@ -1,20 +1,32 @@
 import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from '@iconify/react';
-import { Link } from "react-router-dom";
 import { Tooltip } from '@heroui/react';
+import { Contract, BrowserProvider } from 'ethers';
+import { useAccount, useNetwork } from 'wagmi';
+import { ChainDisplay } from './ChainDisplay';  // Import ChainDisplay
 import launchpadAbi from '../abi/launchpad.json';
 import builderTokenAbi from '../abi/builderToken.json';
-import { useAccount, useNetwork } from 'wagmi';
-import { Contract, BrowserProvider } from 'ethers';
 
-// --- Reusable Token Card Component
+const LAUNCHPAD_ADDRESS = "0x0ca78A8FC88B014bC52F11e3FbD71D4C8d10521A";
+const OPTIMISM_LOGO = "https://assets.coingecko.com/coins/images/25244/small/Optimism.png";
+
 interface TokenCardProps {
   id: string;
   name: string;
   symbol: string;
-  description: string;
-  imageUrl: string;
+  description?: string;
+  imageUrl?: string;
   marketCap: string;
+  category?: string;
+  teamName?: string;
+  links?: {
+    github?: string;
+    website?: string;
+    twitter?: string;
+    discord?: string;
+  };
+  fundingGoal?: number;
   replies?: number;
   isTrending?: boolean;
   createdBy?: string;
@@ -22,34 +34,93 @@ interface TokenCardProps {
   priceChange?: string;
 }
 
+interface TokenTableProps {
+  tokens: TokenCardProps[];
+}
+
+// Helper Functions
+function truncateAddress(address: string): string {
+  if (!address) return 'Anonymous';
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+function getTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  
+  if (seconds < 60) return 'just now';
+  
+  const intervals = {
+    y: 31536000,
+    mo: 2592000,
+    w: 604800,
+    d: 86400,
+    h: 3600,
+    m: 60
+  };
+
+  for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+    const interval = Math.floor(seconds / secondsInUnit);
+    if (interval >= 1) {
+      return `${interval}${unit}`;
+    }
+  }
+  
+  return 'just now';
+}
+
+// Helper function to format token description
+function formatTokenDescription(name: string, symbol: string): string {
+  return `${symbol} token on Optimism Sepolia`;
+}
+
+// --- Skeleton Card Component for Loading State
+const SkeletonCard: React.FC<{ isTrending?: boolean }> = ({ isTrending = false }) => (
+  <div className={`
+    bg-dark-surface-custom-1 rounded-lg border border-dark-border-custom p-3
+    flex ${isTrending ? 'flex-col items-center justify-between w-[170px] h-[210px]' : 'items-start'}
+    animate-pulse
+  `}>
+    <div className={`bg-dark-surface-custom-2 rounded-full ${isTrending ? 'w-14 h-14 mb-2' : 'w-10 h-10 mr-2'}`} />
+    <div className={`flex-1 ${isTrending ? 'flex flex-col items-center w-full' : ''}`}>
+      <div className="h-4 bg-dark-surface-custom-2 rounded w-3/4 mb-2" />
+      <div className="h-3 bg-dark-surface-custom-2 rounded w-1/2 mb-2" />
+      <div className="h-3 bg-dark-surface-custom-2 rounded w-full mb-2" />
+      <div className="mt-2 flex gap-2">
+        <div className="h-4 w-12 bg-dark-surface-custom-2 rounded-full" />
+        <div className="h-4 w-12 bg-dark-surface-custom-2 rounded-full" />
+      </div>
+    </div>
+  </div>
+);
+
+// --- Token Card Component
 const TokenCard: React.FC<TokenCardProps> = ({
   id,
   name,
   symbol,
   description,
-  imageUrl,
+  imageUrl = '',
   marketCap,
+  category = 'OTHER',
+  teamName,
+  links,
+  fundingGoal,
   replies,
-  isTrending,
+  isTrending = false,
   createdBy,
   timeAgo,
   priceChange,
 }) => {
   const isPositiveChange = priceChange && parseFloat(priceChange) >= 0;
+  const chainInfo = <ChainDisplay />;
 
   const cardContent = (
     <div className={`
       bg-dark-surface-custom-1 rounded-lg border border-dark-border-custom p-3
       flex ${isTrending ? 'flex-col items-center justify-between w-[170px] h-[210px]' : 'items-start'}
-      shadow-md-light hover:border-pump-green transition-all duration-200
-      ${isTrending ? '' : 'w-full'}
-      cursor-pointer group
-      hover:scale-[1.04] hover:shadow-xl hover:z-10
-      transition-transform duration-200 ease-out
-      fade-in
     `}>
       <img
-        src={imageUrl}
+        src={imageUrl || '/default-token.png'}
         alt={name}
         className={`
           ${isTrending ? 'w-14 h-14 mb-2 mt-2' : 'w-10 h-10 mr-2'}
@@ -58,22 +129,50 @@ const TokenCard: React.FC<TokenCardProps> = ({
         `}
       />
       <div className={`flex-1 flex flex-col ${isTrending ? 'items-center justify-between text-center w-full' : ''}`}>
-        <h3 className={`font-semibold text-foreground ${isTrending ? 'text-base' : 'text-sm'} leading-tight`}
-          style={isTrending ? {minHeight: '38px'} : {}}>
-          {name} <span className="text-dark-text-secondary text-xs">({symbol})</span>
-        </h3>
+        <div>
+          <h3 className={`font-semibold text-foreground ${isTrending ? 'text-base' : 'text-sm'} leading-tight`}
+            style={isTrending ? {minHeight: '38px'} : {}}>
+            {name} <span className="text-dark-text-secondary text-xs">({symbol})</span>
+          </h3>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] bg-dark-surface-custom-2 px-2 py-0.5 rounded-full text-dark-text-secondary">
+              {category}
+            </span>
+            {teamName && (
+              <span className="text-[10px] text-dark-text-secondary">
+                by {teamName}
+              </span>
+            )}
+          </div>
+        </div>
         {description && (
           <p className={`text-dark-text-secondary text-[10px] ${isTrending ? 'line-clamp-2 min-h-[28px]' : 'line-clamp-1'}`}
             style={isTrending ? {marginBottom: '8px'} : {}}>
             {description}
           </p>
         )}
-        {createdBy && timeAgo && (
+        {(createdBy || timeAgo) && (
           <p className="text-dark-text-secondary text-[9px] mt-1">
-            created by: <span className="text-pump-green">{createdBy}</span> ({timeAgo})
+            {createdBy && (
+              <>
+                <span className="text-dark-text-secondary">by </span>
+                <span className="text-pump-green font-medium hover:underline cursor-pointer">
+                  {createdBy}
+                </span>
+              </>
+            )}
+            {timeAgo && (
+              <>
+                {createdBy && <span className="ml-1">·</span>}
+                <span className="text-dark-text-secondary ml-1">
+                  {timeAgo}
+                </span>
+              </>
+            )}
           </p>
         )}
         <div className={`flex ${isTrending ? 'justify-center' : ''} items-center mt-1.5 mb-1`}>
+          {chainInfo}
           {replies !== undefined && (
             <span className="bg-badge-blue text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold mr-1">
               {replies} replies
@@ -83,336 +182,320 @@ const TokenCard: React.FC<TokenCardProps> = ({
             ${marketCap} MC
           </span>
         </div>
-        {!isTrending && priceChange && (
-          <div className={`text-xs font-semibold mt-1 ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}> 
-            {isPositiveChange ? <Icon icon="lucide:arrow-up-right" className="inline-block mr-0.5 align-text-bottom" /> : <Icon icon="lucide:arrow-down-right" className="inline-block mr-0.5 align-text-bottom" />}
-            {priceChange}%
-          </div>
-        )}
-        {/* Trending card overlay button */}
-        {isTrending && (
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <span className="bg-pump-green text-background px-3 py-1 rounded-full font-bold shadow-neon-green text-xs">View Details</span>
-          </div>
-        )}
       </div>
     </div>
   );
 
-  // If trending, wrap in Link to token-details page
   return isTrending ? (
-    <Link to={`/pgtoken.fun/${id}`} style={{textDecoration: 'none', position: 'relative', display: 'block'}}>{cardContent}</Link>
+    <Link to={`/pgtoken.fun/${id}`} style={{textDecoration: 'none', display: 'block'}}>{cardContent}</Link>
   ) : cardContent;
 };
 
-const SkeletonCard = ({ isTrending = false }) => (
-  <div className={`
-    bg-dark-surface-custom-2 rounded-lg border border-dark-border-custom animate-pulse
-    ${isTrending ? 'w-[170px] h-[210px]' : 'w-full h-[140px]'}
-    flex flex-col items-center justify-center
-  `}>
-    <div className={`bg-dark-border-custom rounded-full ${isTrending ? 'w-14 h-14 mb-2 mt-2' : 'w-10 h-10 mr-2'}`}></div>
-    <div className="h-4 bg-dark-border-custom rounded w-2/3 mb-2"></div>
-    <div className="h-3 bg-dark-border-custom rounded w-1/2"></div>
-  </div>
-);
+// --- Token Table Component
+const TokenTable: React.FC<TokenTableProps> = ({ tokens }) => {
+  const navigate = useNavigate();
+  
+  return (
+    <div className="w-full overflow-x-auto rounded-lg border border-dark-border-custom">
+      <table className="w-full">
+        <thead className="bg-dark-surface-custom-2 border-b border-dark-border-custom">
+          <tr>
+            <th className="text-left p-3 text-xs font-semibold text-dark-text-secondary">Name</th>
+            <th className="text-left p-3 text-xs font-semibold text-dark-text-secondary">Symbol</th>
+            <th className="text-left p-3 text-xs font-semibold text-dark-text-secondary">Description</th>
+            <th className="text-right p-3 text-xs font-semibold text-dark-text-secondary">Market Cap</th>
+            <th className="text-right p-3 text-xs font-semibold text-dark-text-secondary">Price Change</th>
+            <th className="text-center p-3 text-xs font-semibold text-dark-text-secondary">Replies</th>
+            <th className="text-left p-3 text-xs font-semibold text-dark-text-secondary">Created</th>
+            <th className="text-center p-3 text-xs font-semibold text-dark-text-secondary">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tokens.map((token) => (
+            <tr 
+              key={token.id} 
+              className="border-b border-dark-border-custom last:border-b-0 hover:bg-dark-surface-custom-2/50 transition-colors cursor-pointer"
+              onClick={() => navigate(`/pgtoken.fun/${token.id}`)}
+            >
+              <td className="p-3">
+                <div className="flex items-center gap-2">
+                  <img src={token.imageUrl} alt={token.name} className="w-8 h-8 rounded-full border border-pump-green" />
+                  <div>
+                    <span className="font-medium text-sm">{token.name}</span>
+                    {token.category && (
+                      <div className="text-[10px] text-dark-text-secondary mt-0.5">
+                        {token.category}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </td>
+              <td className="p-3 text-sm text-dark-text-secondary">{token.symbol}</td>
+              <td className="p-3">
+                <p className="text-sm text-dark-text-secondary line-clamp-1 max-w-[200px]">
+                  {token.description || 'No description'}
+                </p>
+              </td>
+              <td className="p-3 text-right">
+                <span className="text-sm font-medium text-foreground">${token.marketCap}</span>
+              </td>
+              <td className="p-3 text-right">
+                {token.priceChange && (
+                  <span className={`text-sm font-medium ${parseFloat(token.priceChange) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <Icon 
+                      icon={parseFloat(token.priceChange) >= 0 ? "lucide:arrow-up-right" : "lucide:arrow-down-right"} 
+                      className="inline-block mr-0.5 align-text-bottom" 
+                    />
+                    {token.priceChange}%
+                  </span>
+                )}
+              </td>
+              <td className="p-3 text-center">
+                {token.replies !== undefined && (
+                  <span className="bg-badge-blue text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
+                    {token.replies}
+                  </span>
+                )}
+              </td>
+              <td className="p-3">
+                {(token.createdBy || token.timeAgo) && (
+                  <div className="text-[10px] text-dark-text-secondary">
+                    <span>by <span className="text-pump-green font-medium">{token.createdBy}</span></span>
+                    {token.timeAgo && <span className="block">{token.timeAgo}</span>}
+                  </div>
+                )}
+              </td>
+              <td className="p-3">
+                <div className="flex items-center justify-center gap-1">
+                  {token.links?.github && (
+                    <a href={token.links.github} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-dark-surface-custom-2 text-dark-text-secondary hover:text-foreground transition-colors">
+                      <Icon icon="lucide:github" className="w-4 h-4" />
+                    </a>
+                  )}
+                  {token.links?.website && (
+                    <a href={token.links.website} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-dark-surface-custom-2 text-dark-text-secondary hover:text-foreground transition-colors">
+                      <Icon icon="lucide:globe" className="w-4 h-4" />
+                    </a>
+                  )}
+                  <button className="p-1.5 rounded-lg hover:bg-dark-surface-custom-2 text-dark-text-secondary hover:text-foreground transition-colors">
+                    <Icon icon="lucide:star" className="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
-const LAUNCHPAD_ADDRESS = "0x0ca78A8FC88B014bC52F11e3FbD71D4C8d10521A";
-
-const PgTokenFun: React.FC = () => {
-  const [tokens, setTokens] = useState<any[]>([]);
-  const [trendingTokens, setTrendingTokens] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>("");
+// --- Main PgTokenFun Component
+export function PGTokenFun() {
+  const [tokens, setTokens] = useState<TokenCardProps[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [creating, setCreating] = useState(false);
   const { address } = useAccount();
   const { chain } = useNetwork();
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
 
-  // Fetch tokens from on-chain
-  async function fetchOnChainTokens() {
-    if (!(window as any).ethereum) return [];
-    const provider = new BrowserProvider((window as any).ethereum);
-    const launchpad = new Contract(LAUNCHPAD_ADDRESS, launchpadAbi.abi, provider);
-    let tokenAddresses: string[] = [];
-    try {
-      tokenAddresses = await launchpad.getAllTokens();
-    } catch (e) {
-      return [];
-    }
-    const tokens = await Promise.all(tokenAddresses.map(async (address: string) => {
-      try {
-        const token = new Contract(address, builderTokenAbi, provider);
-        const [name, symbol, totalSupply] = await Promise.all([
-          token.name(),
-          token.symbol(),
-          token.totalSupply(),
-        ]);
-        return {
-          id: address,
-          name,
-          symbol,
-          marketCap: totalSupply.toString(),
-          imageUrl: '',
-          description: '',
-        };
-      } catch {
-        return null;
-      }
-    }));
-    return tokens.filter(Boolean);
-  }
-
-  // Fetch tokens from backend
   useEffect(() => {
-    const fetchTokens = async () => {
-      setLoading(true);
-      setError("");
+    async function loadTokens() {
       try {
-        const tokens = await fetchOnChainTokens();
-        setTokens(tokens);
-        setTrendingTokens(tokens.slice(0, 6));
-      } catch (e: any) {
-        setError(e.message || "Failed to fetch tokens");
+        setIsLoading(true);
+        setError(null);
+        const fetchedTokens = await fetchOnChainTokens();
+        console.log("Setting tokens:", fetchedTokens);
+        setTokens(fetchedTokens);
+      } catch (err) {
+        console.error("Failed to load tokens:", err);
+        setError(err instanceof Error ? err.message : "Failed to load tokens");
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
-    };
-    fetchTokens();
+    }
+
+    loadTokens();
   }, []);
 
-  // Toast auto-dismiss
-  useEffect(() => {
-    if (showToast) {
-      const t = setTimeout(() => setShowToast(false), 2500);
-      return () => clearTimeout(t);
-    }
-  }, [showToast]);
-
-  // Handle create coin (on-chain)
-  const handleCreateCoin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    
-    // Gather form data
-    const projectData = {
-      name: (form.elements.namedItem('name') as HTMLInputElement)?.value.trim(),
-      symbol: (form.elements.namedItem('symbol') as HTMLInputElement)?.value.trim(),
-      description: (form.elements.namedItem('description') as HTMLInputElement)?.value.trim(),
-      category: (form.elements.namedItem('category') as HTMLSelectElement)?.value,
-      teamName: (form.elements.namedItem('teamName') as HTMLInputElement)?.value.trim(),
-      links: {
-        github: (form.elements.namedItem('github') as HTMLInputElement)?.value.trim(),
-        website: (form.elements.namedItem('website') as HTMLInputElement)?.value.trim(),
-        twitter: (form.elements.namedItem('twitter') as HTMLInputElement)?.value.trim(),
-        discord: (form.elements.namedItem('discord') as HTMLInputElement)?.value.trim()
-      },
-      fundingGoal: Number((form.elements.namedItem('fundingGoal') as HTMLInputElement)?.value),
-      initialSupply: Number((form.elements.namedItem('initialSupply') as HTMLInputElement)?.value),
-      milestones: (form.elements.namedItem('milestones') as HTMLTextAreaElement)?.value.split('\n').filter(Boolean),
-      imageFile: (document.getElementById('imageUpload') as HTMLInputElement)?.files?.[0]
-    };
-
-    // Validate project data
-    if (!projectData.name || !projectData.symbol || !projectData.description || !projectData.category || 
-        !projectData.teamName || !projectData.fundingGoal || !projectData.initialSupply || !projectData.milestones.length) {
-      setError('Please fill in all required fields');
-      return;
-    }
-
-    // Validate links format if provided
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
-    const validateUrl = (url: string) => !url || urlPattern.test(url);
-    
-    if (!Object.values(projectData.links).every(validateUrl)) {
-      setError('Please enter valid URLs for project links');
-      return;
-    }
-
-    // Validate token parameters
-    if (projectData.initialSupply < 1000) {
-      setError('Initial token supply must be at least 1000');
-      return;
-    }
-
-    if (projectData.fundingGoal <= 0) {
-      setError('Funding goal must be greater than 0');
-      return;
-    }
-
-    setCreating(true);
+  // Fetch tokens from on-chain
+  async function fetchOnChainTokens(): Promise<TokenCardProps[]> {
     try {
-      // Get signer from window.ethereum
-      if (!(window as any).ethereum) throw new Error('No wallet found');
+      if (!(window as any).ethereum) {
+        console.warn("No ethereum provider found");
+        throw new Error("Please install a Web3 wallet to view tokens");
+      }
+      
       const provider = new BrowserProvider((window as any).ethereum);
-      const signer = await provider.getSigner();
-      // Check if user is on Optimism Sepolia (chainId 11155420)
+      console.log("Getting network info...");
       const network = await provider.getNetwork();
+      console.log("Current network:", {
+        name: network.name,
+        chainId: network.chainId.toString()
+      });
+      
+      // Check if we're on Optimism Sepolia
       if (network.chainId !== 11155420n) {
-        // Prompt user to switch network
-        await (window as any).ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0xaa37dc' }], // 0xaa37dc = 11155420 in hex
-        });
-        setCreating(false);
-        setError('Please switch your wallet to Optimism Sepolia and try again.');
-        return;
+        console.warn(`Wrong network detected. Expected: 11155420 (Optimism Sepolia), Got: ${network.chainId}`);
+        throw new Error(`Please switch to Optimism Sepolia network. Current network: ${network.name} (${network.chainId})`);
       }
-      // Handle image upload first if there's an image file
-      let imageUrl = '';
-      if (projectData.imageFile) {
-        try {
-          // TODO: Replace with your actual image upload service
-          // For now, we'll create an object URL as a placeholder
-          imageUrl = URL.createObjectURL(projectData.imageFile);
-        } catch (e) {
-          console.error('Failed to handle image:', e);
+
+      console.log("Initializing launchpad contract at:", LAUNCHPAD_ADDRESS);
+      const launchpad = new Contract(LAUNCHPAD_ADDRESS, launchpadAbi.abi, provider);
+      
+      console.log("Calling getAllTokens()...");
+      let tokenAddresses: string[];
+      try {
+        tokenAddresses = await launchpad.getAllTokens();
+        console.log("Found token addresses:", tokenAddresses);
+        
+        if (!tokenAddresses) {
+          console.warn("getAllTokens() returned null/undefined");
+          throw new Error("Failed to fetch token list from contract");
         }
+        
+        if (tokenAddresses.length === 0) {
+          console.log("No tokens found on the launchpad");
+          return [];
+        }
+      } catch (e) {
+        console.error("Error in getAllTokens():", e);
+        throw new Error(`Failed to fetch token list: ${e instanceof Error ? e.message : 'Unknown error'}`);
       }
 
-      const contract = new Contract(LAUNCHPAD_ADDRESS, launchpadAbi.abi, signer);
-      const tx = await contract.createToken(
-        projectData.name, 
-        projectData.symbol, 
-        projectData.initialSupply
+      console.log(`Starting to fetch details for ${tokenAddresses.length} tokens...`);
+      const tokens = await Promise.all(
+        tokenAddresses.map(async (address: string, index: number) => {
+          console.log(`[${index + 1}/${tokenAddresses.length}] Processing token at ${address}`);
+          try {
+            const token = new Contract(address, builderTokenAbi, provider);
+            
+            // Fetch basic token info with timeout and retry
+            const fetchWithTimeout = async (operation: () => Promise<any>, name: string) => {
+              const timeout = 10000; // 10 seconds
+              const attempts = 3;
+              
+              for (let i = 0; i < attempts; i++) {
+                try {
+                  const result = await Promise.race([
+                    operation(),
+                    new Promise((_, reject) => 
+                      setTimeout(() => reject(new Error(`${name} timed out`)), timeout)
+                    )
+                  ]);
+                  return result;
+                } catch (e) {
+                  console.warn(`Attempt ${i + 1}/${attempts} failed for ${name}:`, e);
+                  if (i === attempts - 1) throw e;
+                }
+              }
+            };
+
+            console.log(`Fetching basic info for token ${address}...`);
+            const [name, symbol, totalSupply, metadata] = await Promise.all([
+              fetchWithTimeout(() => token.name(), 'name').catch((e) => {
+                console.warn(`Error fetching name for ${address}:`, e);
+                return "Unknown Name";
+              }),
+              fetchWithTimeout(() => token.symbol(), 'symbol').catch((e) => {
+                console.warn(`Error fetching symbol for ${address}:`, e);
+                return "???";
+              }),
+              fetchWithTimeout(() => token.totalSupply(), 'totalSupply').catch((e) => {
+                console.warn(`Error fetching totalSupply for ${address}:`, e);
+                return BigInt(0);
+              }),
+              fetchWithTimeout(() => token.getTokenMetadata(), 'metadata').catch((e) => {
+                console.warn(`Error fetching metadata for ${address}:`, e);
+                return null;
+              })
+            ]);
+
+            console.log(`Raw data for token ${address}:`, {
+              name,
+              symbol,
+              totalSupply: totalSupply.toString(),
+              metadata
+            });
+
+            // Safely parse metadata
+            let parsedMetadata;
+            try {
+              parsedMetadata = metadata ? (
+                typeof metadata === 'string' ? JSON.parse(metadata) : metadata
+              ) : null;
+            } catch (e) {
+              console.warn(`Failed to parse metadata for token ${address}:`, e);
+              parsedMetadata = null;
+            }
+
+            console.log(`Parsed metadata for token ${address}:`, parsedMetadata);
+
+            // Use fallback values for required fields but ensure creator address is always shown properly
+            const tokenMetadata = {
+              description: parsedMetadata?.description || `Token ${symbol} on Optimism Sepolia`,
+              category: parsedMetadata?.category || 'OTHER',
+              teamName: parsedMetadata?.teamName || '',
+              links: parsedMetadata?.links || {},
+              fundingGoal: parsedMetadata?.fundingGoal || 0,
+              imageUrl: parsedMetadata?.imageUrl || '/default-token.png',
+              createdAt: parsedMetadata?.createdAt || Date.now(),
+              createdBy: undefined, // Will be set using the owner address below
+            };
+
+            // Validate required fields
+            if (!name || !symbol || totalSupply === undefined) {
+              console.warn(`Token ${address} missing required fields:`, { name, symbol, totalSupply });
+              throw new Error('Missing required token data');
+            }
+
+            // Get creator address and timestamp
+            const [creator, creationTime] = await Promise.all([
+              fetchWithTimeout(() => token.owner(), 'owner'),
+              fetchWithTimeout(() => token.createdAt(), 'createdAt')
+            ]);
+
+            const result = {
+              id: address,
+              name,
+              symbol,
+              marketCap: (Number(totalSupply) / 1e18).toFixed(2),
+              description: formatTokenDescription(name, symbol),
+              category: tokenMetadata.category,
+              teamName: tokenMetadata.teamName,
+              links: tokenMetadata.links,
+              fundingGoal: tokenMetadata.fundingGoal,
+              imageUrl: tokenMetadata.imageUrl,
+              timeAgo: creationTime ? getTimeAgo(Number(creationTime) * 1000) : undefined,
+              createdBy: creator ? truncateAddress(creator) : 'Anonymous',
+              priceChange: "0",
+              replies: 0
+            };
+
+            console.log(`Successfully processed token ${address}:`, result);
+            return result;
+          } catch (error) {
+            console.error(`Failed to process token ${address}:`, error);
+            return null;
+          }
+        })
       );
-      await tx.wait();
 
-      // TODO: Store additional project metadata in a separate call or database
-      const projectMetadata = {
-        description: projectData.description,
-        category: projectData.category,
-        teamName: projectData.teamName,
-        links: projectData.links,
-        fundingGoal: projectData.fundingGoal,
-        milestones: projectData.milestones,
-        imageUrl
-      };
-
-      setShowCreateModal(false);
-      setShowToast(true);
-      const tokens = await fetchOnChainTokens();
-      setTokens(tokens);
-      setTrendingTokens(tokens.slice(0, 6));
-      // Optionally: fetch tokens from chain or backend here
-    } catch (e) {
-      setError("Failed to create token on-chain");
-    } finally {
-      setCreating(false);
+      const validTokens = tokens.filter(Boolean) as TokenCardProps[];
+      console.log(`Successfully fetched ${validTokens.length} out of ${tokenAddresses.length} tokens`);
+      return validTokens;
+    } catch (err) {
+      console.error("Fatal error in fetchOnChainTokens:", err);
+      throw err;
     }
-  };
+  }
 
   return (
-    <div className="flex-1 p-0 sm:p-6 bg-gradient-to-br from-background via-dark-surface-custom-2/60 to-pump-blue/10 text-foreground font-sans max-w-full min-h-screen">
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-[#CDEB63] text-black px-6 py-3 rounded-2xl shadow-xl font-semibold animate-fade-in">
-          <div className="flex items-center gap-2 mb-1">
-            <Icon icon="lucide:check-circle" className="text-green-600 text-xl" />
-            <span>Project Successfully Launched! 🚀</span>
-          </div>
-          <p className="text-xs opacity-75">Your public goods project is now live on Optimism Sepolia</p>
-        </div>
-      )}
-      {/* Create Coin Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-2xl shadow-2xl border border-[#CDEB63] bg-dark-surface-custom-1 animate-fade-in">
-            <div className="flex flex-col items-center p-7 gap-4">
-              <button className="absolute top-4 right-4 text-xl text-dark-text-secondary hover:text-foreground" onClick={() => setShowCreateModal(false)}>
-                <Icon icon="lucide:x" />
-              </button>
-              <div className="flex items-center gap-2 mb-2">
-                <Icon icon="lucide:rocket" className="text-[#CDEB63] text-3xl animate-bounce" />
-                <h2 className="text-2xl font-bold text-[#CDEB63]">Launch Public Goods Project</h2>
-              </div>
-              <p className="text-center text-base text-dark-text-secondary max-w-xs mb-2">
-                Launch a public goods project with its own governance token and funding structure on Optimism Sepolia.
-              </p>
-              <form className="flex flex-col gap-3 w-full mt-2" onSubmit={handleCreateCoin}>
-                <div className="border-b border-dark-border-custom pb-4 mb-2">
-                  <h3 className="text-sm font-semibold text-[#CDEB63] mb-3">Basic Information</h3>
-                  <input name="name" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none w-full mb-2" placeholder="Project Name" required />
-                  <input name="symbol" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none w-full mb-2" placeholder="Token Symbol (e.g. PUB)" maxLength={8} required />
-                  <textarea name="description" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none resize-none w-full" placeholder="Project Description - What problem does it solve?" rows={3} required />
-                </div>
-                
-                <div className="border-b border-dark-border-custom pb-4 mb-2">
-                  <h3 className="text-sm font-semibold text-[#CDEB63] mb-3">Project Category & Type</h3>
-                  <select name="category" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none w-full mb-2" required>
-                    <option value="">Select Category</option>
-                    <option value="infrastructure">Infrastructure</option>
-                    <option value="defi">DeFi</option>
-                    <option value="social">Social Impact</option>
-                    <option value="climate">Climate Action</option>
-                    <option value="education">Education</option>
-                    <option value="opensource">Open Source</option>
-                    <option value="other">Other</option>
-                  </select>
-                  <div className="flex flex-wrap gap-2">
-                    <button type="button" className="px-3 py-1 rounded-full text-xs border border-[#CDEB63] text-[#CDEB63] hover:bg-[#CDEB63]/10">Retroactive</button>
-                    <button type="button" className="px-3 py-1 rounded-full text-xs border border-[#CDEB63] text-[#CDEB63] hover:bg-[#CDEB63]/10">Proactive</button>
-                    <button type="button" className="px-3 py-1 rounded-full text-xs border border-[#CDEB63] text-[#CDEB63] hover:bg-[#CDEB63]/10">Quadratic</button>
-                  </div>
-                </div>
-
-                <div className="border-b border-dark-border-custom pb-4 mb-2">
-                  <h3 className="text-sm font-semibold text-[#CDEB63] mb-3">Team & Links</h3>
-                  <input name="teamName" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none w-full mb-2" placeholder="Team Name" required />
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <input name="github" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none" placeholder="Github URL" />
-                    <input name="website" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none" placeholder="Website URL" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input name="twitter" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none" placeholder="Twitter/X URL" />
-                    <input name="discord" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none" placeholder="Discord URL" />
-                  </div>
-                </div>
-
-                <div className="border-b border-dark-border-custom pb-4 mb-2">
-                  <h3 className="text-sm font-semibold text-[#CDEB63] mb-3">Funding & Goals</h3>
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <input name="fundingGoal" type="number" min="0" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none" placeholder="Funding Goal (OP)" required />
-                    <input name="initialSupply" type="number" min="1000" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none" placeholder="Token Supply" required />
-                  </div>
-                  <textarea name="milestones" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none resize-none w-full mb-2" placeholder="Key Milestones (one per line)" rows={3} required />
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-[#CDEB63] mb-3">Project Image</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-lg border-2 border-dashed border-dark-border-custom flex items-center justify-center hover:border-[#CDEB63] transition-colors cursor-pointer">
-                      <Icon icon="lucide:image-plus" className="text-2xl text-dark-text-secondary" />
-                    </div>
-                    <div className="flex-1">
-                      <input name="imageUrl" type="file" accept="image/*" className="hidden" id="imageUpload" />
-                      <label htmlFor="imageUpload" className="bg-dark-surface-custom-2 border border-dark-border-custom rounded px-3 py-2 text-foreground placeholder:text-dark-text-secondary focus:border-[#CDEB63] outline-none w-full cursor-pointer block">
-                        Choose Image
-                      </label>
-                      <p className="text-xs text-dark-text-secondary mt-1">Recommended: 400x400px, max 2MB</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-3 mt-4">
-                  <button type="submit" disabled={creating} className="bg-[#CDEB63] hover:bg-[#b6d13e] text-black font-bold py-3 rounded-full shadow-neon-green transition-all text-lg border border-[#CDEB63] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                    <Icon icon="lucide:rocket" />
-                    {creating ? 'Launching Project...' : 'Launch Project'}
-                  </button>
-                  <p className="text-xs text-dark-text-secondary text-center">
-                    By launching, you agree to our community guidelines and terms of service
-                  </p>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="flex-1 p-0 sm:p-6 bg-gradient-to-br from-background via-dark-surface-custom-2/60 to-pump-blue/10 text-foreground font-sans max-w-full min-h-screen relative">
       {/* "New Coins" / "Create New Coin" Banner/Card */}
       <div className="relative bg-gradient-to-br from-pump-green/20 to-pump-blue/20 p-4 rounded-xl border border-pump-green/40 mb-8 flex flex-col sm:flex-row items-center justify-between shadow-lg backdrop-blur-md gap-4 min-h-[90px] h-[90px] overflow-hidden">
-        {/* 3D SVG Pattern (inspired by market-stats) */}
+        {/* 3D SVG Pattern */}
         <div className="absolute inset-0 opacity-[0.10] z-0 pointer-events-none select-none animate-pulse-slow">
           <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -436,13 +519,13 @@ const PgTokenFun: React.FC = () => {
             <p className="text-xs text-dark-text-secondary">It's fast, fun, and fair on pgtoken.fun!</p>
           </div>
         </div>
-        <button
+        <Link
+          to="/pgtoken.fun/create"
           className="z-10 bg-[#CDEB63] hover:bg-[#b6d13e] text-black px-5 py-2 rounded-full font-bold shadow-neon-green hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center gap-2 text-base border border-[#CDEB63]"
-          onClick={() => setShowCreateModal(true)}
         >
           <Icon icon="lucide:plus" width={20} height={20} />
           Create Coin
-        </button>
+        </Link>
       </div>
 
       {/* Now Trending Section */}
@@ -469,12 +552,12 @@ const PgTokenFun: React.FC = () => {
           </div>
         </div>
         <div id="trending-row" className="flex overflow-x-auto gap-4 py-2 scrollbar-hide min-h-[210px] snap-x snap-mandatory">
-          {loading ? (
+          {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} isTrending />)
           ) : error ? (
             <div className="text-red-500 text-sm">{error}</div>
           ) : (
-            trendingTokens.map((token) => (
+            tokens.map((token) => (
               <TokenCard key={token.id} {...token} isTrending={true} />
             ))
           )}
@@ -523,25 +606,45 @@ const PgTokenFun: React.FC = () => {
         </button>
       </div>
 
-      {/* Token Grid */}
-      <div className={`grid ${viewType === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'} gap-6`}>
-        {loading ? (
-          Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
+      {/* Token Grid/List */}
+      {viewType === 'grid' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {isLoading ? (
+            Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
+          ) : error ? (
+            <div className="col-span-full flex justify-center items-center h-32">
+              <span className="text-red-500 font-semibold text-lg">{error}</span>
+            </div>
+          ) : (
+            tokens.map((token) => (
+              <TokenCard key={token.id} {...token} />
+            ))
+          )}
+        </div>
+      ) : (
+        isLoading ? (
+          <div className="animate-pulse space-y-4">
+            <div className="h-10 bg-dark-surface-custom-2 rounded-lg w-full"></div>
+            <div className="h-10 bg-dark-surface-custom-2 rounded-lg w-full"></div>
+            <div className="h-10 bg-dark-surface-custom-2 rounded-lg w-full"></div>
+          </div>
         ) : error ? (
-          <div className="col-span-full flex justify-center items-center h-32">
-            <span className="text-red-500 font-semibold text-lg">{error}</span>
+          <div className="flex justify-center items-center h-32">
+            <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-lg p-4 max-w-md w-full text-center">
+              <Icon icon="lucide:alert-circle" className="w-6 h-6 mx-auto mb-2" />
+              <span className="font-semibold text-lg block mb-1">{error}</span>
+              <span className="text-sm opacity-80">Please make sure you're connected to your wallet and on the Optimism Sepolia network.</span>
+            </div>
           </div>
         ) : (
-          tokens.map((token) => (
-            <TokenCard key={token.id} {...token} />
-          ))
-        )}
-      </div>
+          <TokenTable tokens={tokens} />
+        )
+      )}
     </div>
   );
 };
 
-export default PgTokenFun;
+export default PGTokenFun;
 
 /* Add fade-in and slow pulse keyframes to index.css or global styles:
 .fade-in { animation: fadeIn 0.7s cubic-bezier(.39,.575,.565,1) both; }
