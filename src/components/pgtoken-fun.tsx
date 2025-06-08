@@ -370,69 +370,35 @@ export function PGTokenFun() {
           console.log(`[${index + 1}/${tokenAddresses.length}] Processing token at ${address}`);
           try {
             const token = new Contract(address, builderTokenAbi, provider);
-            
-            // Fetch basic token info with timeout and retry
-            const fetchWithTimeout = async (operation: () => Promise<any>, name: string) => {
-              const timeout = 10000; // 10 seconds
-              const attempts = 3;
-              
-              for (let i = 0; i < attempts; i++) {
-                try {
-                  const result = await Promise.race([
-                    operation(),
-                    new Promise((_, reject) => 
-                      setTimeout(() => reject(new Error(`${name} timed out`)), timeout)
-                    )
-                  ]);
-                  return result;
-                } catch (e) {
-                  console.warn(`Attempt ${i + 1}/${attempts} failed for ${name}:`, e);
-                  if (i === attempts - 1) throw e;
-                }
+
+            // Helper to try a contract call, fallback to undefined if not implemented
+            const tryCall = async (fn: () => Promise<any>, fallback: any = undefined) => {
+              try {
+                return await fn();
+              } catch (e) {
+                console.warn(`Fallback for ${address}:`, e);
+                return fallback;
               }
             };
 
-            console.log(`Fetching basic info for token ${address}...`);
+            // Fetch basic info
             const [name, symbol, totalSupply, metadata] = await Promise.all([
-              fetchWithTimeout(() => token.name(), 'name').catch((e) => {
-                console.warn(`Error fetching name for ${address}:`, e);
-                return "Unknown Name";
-              }),
-              fetchWithTimeout(() => token.symbol(), 'symbol').catch((e) => {
-                console.warn(`Error fetching symbol for ${address}:`, e);
-                return "???";
-              }),
-              fetchWithTimeout(() => token.totalSupply(), 'totalSupply').catch((e) => {
-                console.warn(`Error fetching totalSupply for ${address}:`, e);
-                return BigInt(0);
-              }),
-              fetchWithTimeout(() => token.getTokenMetadata(), 'metadata').catch((e) => {
-                console.warn(`Error fetching metadata for ${address}:`, e);
-                return null;
-              })
+              tryCall(() => token.name(), 'Unknown Name'),
+              tryCall(() => token.symbol(), '???'),
+              tryCall(() => token.totalSupply(), BigInt(0)),
+              tryCall(() => token.getTokenMetadata(), null)
             ]);
 
-            console.log(`Raw data for token ${address}:`, {
-              name,
-              symbol,
-              totalSupply: totalSupply.toString(),
-              metadata
-            });
-
-            // Safely parse metadata
+            // Parse metadata if available
             let parsedMetadata;
             try {
               parsedMetadata = metadata ? (
                 typeof metadata === 'string' ? JSON.parse(metadata) : metadata
               ) : null;
             } catch (e) {
-              console.warn(`Failed to parse metadata for token ${address}:`, e);
               parsedMetadata = null;
             }
 
-            console.log(`Parsed metadata for token ${address}:`, parsedMetadata);
-
-            // Use fallback values for required fields but ensure creator address is always shown properly
             const tokenMetadata = {
               description: parsedMetadata?.description || `Token ${symbol} on Optimism Sepolia`,
               category: parsedMetadata?.category || 'OTHER',
@@ -441,19 +407,13 @@ export function PGTokenFun() {
               fundingGoal: parsedMetadata?.fundingGoal || 0,
               imageUrl: parsedMetadata?.imageUrl || '/default-token.png',
               createdAt: parsedMetadata?.createdAt || Date.now(),
-              createdBy: undefined, // Will be set using the owner address below
+              createdBy: undefined, // Will be set below if possible
             };
 
-            // Validate required fields
-            if (!name || !symbol || totalSupply === undefined) {
-              console.warn(`Token ${address} missing required fields:`, { name, symbol, totalSupply });
-              throw new Error('Missing required token data');
-            }
-
-            // Get creator address and timestamp
+            // Try to get creator and creation time, fallback if not implemented
             const [creator, creationTime] = await Promise.all([
-              fetchWithTimeout(() => token.owner(), 'owner'),
-              fetchWithTimeout(() => token.createdAt(), 'createdAt')
+              tryCall(() => token.owner(), undefined),
+              tryCall(() => token.createdAt(), undefined)
             ]);
 
             const result = {
@@ -468,12 +428,11 @@ export function PGTokenFun() {
               fundingGoal: tokenMetadata.fundingGoal,
               imageUrl: tokenMetadata.imageUrl,
               timeAgo: creationTime ? getTimeAgo(Number(creationTime) * 1000) : undefined,
-              createdBy: creator ? truncateAddress(creator) : 'Anonymous',
+              createdBy: creator ? truncateAddress(creator) : 'Unknown',
               priceChange: "0",
               replies: 0
             };
 
-            console.log(`Successfully processed token ${address}:`, result);
             return result;
           } catch (error) {
             console.error(`Failed to process token ${address}:`, error);
