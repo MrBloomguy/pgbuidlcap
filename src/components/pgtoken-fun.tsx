@@ -73,6 +73,11 @@ function formatTokenDescription(name: string, symbol: string): string {
   return `${symbol} token on Optimism Sepolia`;
 }
 
+// Helper to get DiceBear avatar URL
+function getDiceBearAvatar(seed: string) {
+  return `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(seed)}`;
+}
+
 // --- Skeleton Card Component for Loading State
 const SkeletonCard: React.FC<{ isTrending?: boolean }> = ({ isTrending = false }) => (
   <div className={`
@@ -114,13 +119,54 @@ const TokenCard: React.FC<TokenCardProps> = ({
   const isPositiveChange = priceChange && parseFloat(priceChange) >= 0;
   const chainInfo = <ChainDisplay />;
 
+  // Use DiceBear avatar if no imageUrl or imageUrl is empty string
+  const avatarUrl = imageUrl && imageUrl !== '/default-token.png' ? imageUrl : getDiceBearAvatar(name || symbol || id);
+
+  // --- Redesigned Trending Card ---
+  if (isTrending) {
+    return (
+      <Link to={`/pgtoken.fun/${id}`} style={{ textDecoration: 'none', display: 'block' }}>
+        <div className="bg-gradient-to-br from-pump-green/80 to-pump-blue/80 rounded-xl border border-pump-green/60 shadow-lg p-3 flex flex-col items-center min-w-[140px] max-w-[150px] h-[170px] hover:scale-105 transition-transform duration-200 group relative overflow-hidden">
+          <div className="absolute top-2 right-2 z-10">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${isPositiveChange ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>{priceChange}%</span>
+          </div>
+          <img
+            src={avatarUrl}
+            alt={name}
+            className="w-12 h-12 rounded-full object-cover border-2 border-pump-green shadow-md mb-1 mt-1 group-hover:scale-110 transition-transform duration-200"
+          />
+          <div className="flex flex-col items-center text-center flex-1 w-full">
+            <h3 className="font-bold text-sm text-foreground leading-tight mb-0.5 truncate w-full" title={name}>{name}</h3>
+            <span className="text-xs text-dark-text-secondary font-medium mb-0.5">({symbol})</span>
+            <span className="text-[10px] bg-dark-surface-custom-2 px-2 py-0.5 rounded-full text-dark-text-secondary mb-0.5">{category}</span>
+            {teamName && <span className="text-[10px] text-dark-text-secondary mb-0.5">by {teamName}</span>}
+            {description && (
+              <p className="text-dark-text-secondary text-[10px] line-clamp-2 min-h-[20px] mb-0.5">{description}</p>
+            )}
+            <div className="flex items-center justify-center gap-1 mt-auto mb-0.5 w-full">
+              {chainInfo}
+              <span className="bg-badge-green text-gray-800 px-1 py-0.5 rounded-full text-[10px] font-bold">${marketCap} MC</span>
+            </div>
+            {(createdBy || timeAgo) && (
+              <div className="text-[9px] text-dark-text-secondary mt-0.5 w-full truncate">
+                {createdBy && <span className="text-pump-green font-medium">{createdBy}</span>}
+                {createdBy && timeAgo && <span className="mx-1">·</span>}
+                {timeAgo && <span>{timeAgo}</span>}
+              </div>
+            )}
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
   const cardContent = (
     <div className={`
       bg-dark-surface-custom-1 rounded-lg border border-dark-border-custom p-3
       flex ${isTrending ? 'flex-col items-center justify-between w-[170px] h-[210px]' : 'items-start'}
     `}>
       <img
-        src={imageUrl || '/default-token.png'}
+        src={avatarUrl}
         alt={name}
         className={`
           ${isTrending ? 'w-14 h-14 mb-2 mt-2' : 'w-10 h-10 mr-2'}
@@ -211,86 +257,90 @@ const TokenTable: React.FC<TokenTableProps> = ({ tokens }) => {
           </tr>
         </thead>
         <tbody>
-          {tokens.map((token) => (
-            <tr 
-              key={token.id} 
-              className="border-b border-dark-border-custom last:border-b-0 hover:bg-dark-surface-custom-2/50 transition-colors cursor-pointer"
-              onClick={() => navigate(`/pgtoken.fun/${token.id}`)}
-            >
-              <td className="p-3">
-                <div className="flex items-center gap-2">
-                  <img src={token.imageUrl} alt={token.name} className="w-8 h-8 rounded-full border border-pump-green" />
-                  <div>
-                    <span className="font-medium text-sm">{token.name}</span>
-                    {token.category && (
-                      <div className="text-[10px] text-dark-text-secondary mt-0.5">
-                        {token.category}
-                      </div>
-                    )}
+          {tokens.map((token) => {
+            // Use DiceBear avatar if no imageUrl or imageUrl is empty string
+            const avatarUrl = token.imageUrl && token.imageUrl !== '/default-token.png' ? token.imageUrl : getDiceBearAvatar(token.name || token.symbol || token.id);
+            return (
+              <tr 
+                key={token.id} 
+                className="border-b border-dark-border-custom last:border-b-0 hover:bg-dark-surface-custom-2/50 transition-colors cursor-pointer"
+                onClick={() => navigate(`/pgtoken.fun/${token.id}`)}
+              >
+                <td className="p-3">
+                  <div className="flex items-center gap-2">
+                    <img src={avatarUrl} alt={token.name} className="w-8 h-8 rounded-full border border-pump-green" />
+                    <div>
+                      <span className="font-medium text-sm">{token.name}</span>
+                      {token.category && (
+                        <div className="text-[10px] text-dark-text-secondary mt-0.5">
+                          {token.category}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td className="p-3 text-sm text-dark-text-secondary">{token.symbol}</td>
-              <td className="p-3">
-                <p className="text-sm text-dark-text-secondary line-clamp-1 max-w-[200px]">
-                  {token.description || 'No description'}
-                </p>
-              </td>
-              <td className="p-3 text-right">
-                <span className="text-sm font-medium text-foreground">${token.marketCap}</span>
-              </td>
-              <td className="p-3 text-right">
-                {token.priceChange && (
-                  <span className={`text-sm font-medium ${parseFloat(token.priceChange) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                </td>
+                <td className="p-3 text-sm text-dark-text-secondary">{token.symbol}</td>
+                <td className="p-3">
+                  <p className="text-sm text-dark-text-secondary line-clamp-1 max-w-[200px]">
+                    {token.description || 'No description'}
+                  </p>
+                </td>
+                <td className="p-3 text-right">
+                  <span className="text-sm font-medium text-foreground">${token.marketCap}</span>
+                </td>
+                <td className="p-3 text-right">
+                  {token.priceChange && (
+                    <span className={`text-sm font-medium ${parseFloat(token.priceChange) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     <Icon 
                       icon={parseFloat(token.priceChange) >= 0 ? "lucide:arrow-up-right" : "lucide:arrow-down-right"} 
                       className="inline-block mr-0.5 align-text-bottom" 
                     />
                     {token.priceChange}%
                   </span>
-                )}
-              </td>
-              <td className="p-3 text-center">
-                {token.replies !== undefined && (
-                  <span className="bg-badge-blue text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
-                    {token.replies}
-                  </span>
-                )}
-              </td>
-              <td className="p-3">
-                {(token.createdBy || token.timeAgo) && (
-                  <div className="text-[10px] text-dark-text-secondary">
-                    <span>by <span className="text-pump-green font-medium">{token.createdBy}</span></span>
-                    {token.timeAgo && <span className="block">{token.timeAgo}</span>}
+                  )}
+                </td>
+                <td className="p-3 text-center">
+                  {token.replies !== undefined && (
+                    <span className="bg-badge-blue text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
+                      {token.replies}
+                    </span>
+                  )}
+                </td>
+                <td className="p-3">
+                  {(token.createdBy || token.timeAgo) && (
+                    <div className="text-[10px] text-dark-text-secondary">
+                      <span>by <span className="text-pump-green font-medium">{token.createdBy}</span></span>
+                      {token.timeAgo && <span className="block">{token.timeAgo}</span>}
+                    </div>
+                  )}
+                </td>
+                <td className="p-3">
+                  <div className="flex items-center justify-center gap-1">
+                    {token.links?.github && (
+                      <a href={token.links.github} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-dark-surface-custom-2 text-dark-text-secondary hover:text-foreground transition-colors">
+                        <Icon icon="lucide:github" className="w-4 h-4" />
+                      </a>
+                    )}
+                    {token.links?.website && (
+                      <a href={token.links.website} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-dark-surface-custom-2 text-dark-text-secondary hover:text-foreground transition-colors">
+                        <Icon icon="lucide:globe" className="w-4 h-4" />
+                      </a>
+                    )}
+                    <button className="p-1.5 rounded-lg hover:bg-dark-surface-custom-2 text-dark-text-secondary hover:text-foreground transition-colors">
+                      <Icon icon="lucide:star" className="w-4 h-4" />
+                    </button>
                   </div>
-                )}
-              </td>
-              <td className="p-3">
-                <div className="flex items-center justify-center gap-1">
-                  {token.links?.github && (
-                    <a href={token.links.github} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-dark-surface-custom-2 text-dark-text-secondary hover:text-foreground transition-colors">
-                      <Icon icon="lucide:github" className="w-4 h-4" />
-                    </a>
-                  )}
-                  {token.links?.website && (
-                    <a href={token.links.website} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-dark-surface-custom-2 text-dark-text-secondary hover:text-foreground transition-colors">
-                      <Icon icon="lucide:globe" className="w-4 h-4" />
-                    </a>
-                  )}
-                  <button className="p-1.5 rounded-lg hover:bg-dark-surface-custom-2 text-dark-text-secondary hover:text-foreground transition-colors">
-                    <Icon icon="lucide:star" className="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 };
 
-// --- Main PgTokenFun Component
+// --- Main PGTokenFun Component
 export function PGTokenFun() {
   const [tokens, setTokens] = useState<TokenCardProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);

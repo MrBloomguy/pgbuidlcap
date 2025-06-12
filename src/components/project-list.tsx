@@ -48,7 +48,8 @@ const sampleComments = {
 interface ProjectListProps {
   viewMode: "grid" | "table";
   selectedTimeFilter: string;
-  onTokenSelect: (tokenId: string) => void;
+  onTokenSelect?: (tokenId: string) => void;
+  filterProgram?: 'RetroPGF' | 'Gitcoin';  // New prop to filter by program type
 }
 
 // Adding reaction counts interface
@@ -162,10 +163,13 @@ const CommentThread: React.FC<{ comment: Comment }> = ({ comment }) => {
 export const ProjectList: React.FC<ProjectListProps> = ({
   viewMode,
   selectedTimeFilter,
-  onTokenSelect
+  onTokenSelect,
+  filterProgram
 }) => {
-  const [projects, setProjects] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [projectsData, setProjectsData] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [expandedCommentId, setExpandedCommentId] = React.useState<string | null>(null);
   const [commentText, setCommentText] = React.useState("");
   const [likedTokens, setLikedTokens] = React.useState<Set<string>>(new Set());
@@ -331,7 +335,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       }
     ];
 
-    setProjects(sampleProjects);
+    setProjectsData(sampleProjects);
     setLoading(false);
   }, []);
 
@@ -359,7 +363,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     };
 
     // Optimistically update UI
-    setProjects(prev => prev.map(p => {
+    setProjectsData(prev => prev.map(p => {
       if (p.id === project.id) {
         return {
           ...p,
@@ -388,7 +392,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     });
 
     // Optimistically update the likes count
-    setProjects(prev => prev.map(p => {
+    setProjectsData(prev => prev.map(p => {
       if (p.id === project.id) {
         const delta = likedTokens.has(project.id) ? -1 : 1;
         return {
@@ -412,7 +416,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       });
 
       // Optimistically update the upvotes count
-      setProjects(prev => prev.map(p => {
+      setProjectsData(prev => prev.map(p => {
         if (p.id === project.id) {
           return {
             ...p,
@@ -433,10 +437,10 @@ export const ProjectList: React.FC<ProjectListProps> = ({
         <div className="grid-view">
           {loading ? (
             <div className="text-default-500 text-center w-full">Loading projects...</div>
-          ) : projects.length === 0 ? (
+          ) : projectsData.length === 0 ? (
             <div className="text-default-500 text-center w-full">No projects found.</div>
           ) : (
-            projects.map((project, idx) => (
+            projectsData.map((project, idx) => (
               <Card
                 key={project.id || idx}
                 className="border-b border-divider hover:bg-default-100/50 transition-colors rounded-xl overflow-hidden"
@@ -597,9 +601,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                       </div>
                     </div>
                   </div>
-                )}
-              </Card>
-            ))
           )}
         </div>
 

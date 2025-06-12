@@ -1,6 +1,7 @@
 import React from "react";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Avatar, Chip, Button, Progress, ButtonGroup, Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { supabase } from "../utils/supabase";
 
 interface Leader {
   id: number;
@@ -36,66 +37,51 @@ export const LeaderboardPage: React.FC = (): JSX.Element => {
     { key: "domains", label: "Domains", icon: "lucide:globe" }
   ];
   
-  const leaders: Leader[] = [
-    { 
-      id: 1, 
-      address: "0x1234...5678",
-      ensName: "buildmaster.eth",
-      avatar: "https://img.heroui.chat/image/avatar?w=64&h=64&u=1", 
-      rank: 1, 
-      points: 1850,
-      contributions: 42,
-      impactScore: 95.3,
-      growth: 15.4,
-      badges: ["diamond", "gold"],
-      level: 5,
-      specialties: ["Smart Contracts", "DeFi", "Public Goods"],
-      activity: {
-        weeklyCommits: 24,
-        proposalsCreated: 8,
-        proposalsReviewed: 15
-      }
-    },
-    { 
-      id: 2, 
-      address: "0x8765...4321",
-      username: "PublicBuilder",
-      avatar: "https://img.heroui.chat/image/avatar?w=64&h=64&u=2", 
-      rank: 2, 
-      points: 1540,
-      contributions: 36,
-      impactScore: 87.8,
-      growth: 12.3,
-      badges: ["gold", "silver"],
-      level: 4,
-      specialties: ["Frontend", "Design", "DAOs"],
-      activity: {
-        weeklyCommits: 18,
-        proposalsCreated: 5,
-        proposalsReviewed: 12
-      }
-    },
-    { 
-      id: 3, 
-      address: "0xabcd...efgh",
-      ensName: "devguru.eth",
-      avatar: "https://img.heroui.chat/image/avatar?w=64&h=64&u=3", 
-      rank: 3, 
-      points: 1320,
-      contributions: 28,
-      impactScore: 82.5,
-      growth: 8.7,
-      badges: ["gold"],
-      level: 4,
-      specialties: ["Infrastructure", "Security"],
-      activity: {
-        weeklyCommits: 15,
-        proposalsCreated: 3,
-        proposalsReviewed: 8
+  // Replace hardcoded leaders with Supabase fetch
+  const [leaders, setLeaders] = React.useState<Leader[]>([]);
+  const [loadingLeaders, setLoadingLeaders] = React.useState(true);
+  const [errorLeaders, setErrorLeaders] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    async function fetchLeaders() {
+      setLoadingLeaders(true);
+      setErrorLeaders(null);
+      try {
+        // Example: fetch top users from a 'user_badges' table, adjust as needed
+        const { data, error } = await supabase
+          .from('user_badges')
+          .select('user_address, level, name, icon')
+          .order('level', { ascending: false })
+          .limit(10);
+        if (error) throw error;
+        // Map to Leader interface (mocked fields for missing data)
+        setLeaders((data || []).map((row: any, i: number) => ({
+          id: i + 1,
+          address: row.user_address,
+          avatar: `https://img.heroui.chat/image/avatar?w=64&h=64&u=${row.user_address}`,
+          rank: i + 1,
+          points: (row.level === 'diamond' ? 400 : row.level === 'gold' ? 300 : row.level === 'silver' ? 200 : 100) * 10, // Example points
+          contributions: 0, // Not available in this table
+          impactScore: 80 + i, // Example
+          growth: 5 + i, // Example
+          badges: [row.level],
+          level: row.level === 'diamond' ? 4 : row.level === 'gold' ? 3 : row.level === 'silver' ? 2 : 1,
+          specialties: [row.name],
+          activity: {
+            weeklyCommits: 0,
+            proposalsCreated: 0,
+            proposalsReviewed: 0
+          }
+        )));
+      } catch (e: any) {
+        setErrorLeaders(e.message || 'Failed to load leaderboard');
+      } finally {
+        setLoadingLeaders(false);
       }
     }
-  ];
-
+    fetchLeaders();
+  }, [timeRange, category]);
+  
   // Helper function to display address or name
   const getDisplayName = (leader: Leader) => {
     return leader.ensName || leader.username || truncateAddress(leader.address);
@@ -125,6 +111,11 @@ export const LeaderboardPage: React.FC = (): JSX.Element => {
     }
   };
   
+  // Show loading and error states before rendering leaderboard
+  if (loadingLeaders) return <div className="p-8 text-center">Loading leaderboard...</div>;
+  if (errorLeaders) return <div className="p-8 text-center text-red-500">{errorLeaders}</div>;
+  if (!leaders || leaders.length === 0) return <div className="p-8 text-center">No leaderboard data found.</div>;
+
   return (
     <div className="animate-in fade-in duration-300 max-w-7xl mx-auto px-4">
       {/* Leaderboard Header */}

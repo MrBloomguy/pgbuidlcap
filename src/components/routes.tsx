@@ -16,6 +16,7 @@ import { DocsPage } from "./docs-page";
 import { ProjectDetail } from "./project-detail";
 import PgTokenFun from "./pgtoken-fun";
 import { CreateCoinPage } from "./create-coin-page";
+import { RetroPGFPage, GitcoinGrantsPage } from "../pages/grant-programs";
 
 export const Routes: React.FC = () => {
   const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
@@ -217,6 +218,8 @@ export const Routes: React.FC = () => {
           </div>
         )
       } />
+      <Route path="/retropgf" element={<RetroPGFPage />} />
+      <Route path="/gitcoin" element={<GitcoinGrantsPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/leaderboard" element={
         <Leaderboard 

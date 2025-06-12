@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useAccount, useEnsName, useEnsAvatar, useBalance } from 'wagmi';
 import { useTheme } from "@heroui/use-theme";
 import { getAvatarUrl, generateAvatar, saveAvatarSettings, AvatarCustomization } from '../utils/avatar-utils';
+import { supabase } from '../utils/supabase';
 
 interface Badge {
   id: string;
@@ -37,7 +38,16 @@ export const ProfilePage: React.FC = () => {
   const [editModal, setEditModal] = React.useState<EditModalState>({ isOpen: false, type: null });
   const [bio, setBio] = React.useState("Building public goods for web3 | Full-stack developer | Open source contributor");
   const [avatarSettings, setAvatarSettings] = React.useState<AvatarCustomization>({});
-  
+  const [badges, setBadges] = React.useState<Badge[]>([]);
+  const [projects, setProjects] = React.useState<any[]>([]);
+  const [activity, setActivity] = React.useState<any[]>([]);
+  const [loadingBadges, setLoadingBadges] = React.useState(true);
+  const [loadingProjects, setLoadingProjects] = React.useState(true);
+  const [loadingActivity, setLoadingActivity] = React.useState(true);
+  const [errorBadges, setErrorBadges] = React.useState<string | null>(null);
+  const [errorProjects, setErrorProjects] = React.useState<string | null>(null);
+  const [errorActivity, setErrorActivity] = React.useState<string | null>(null);
+
   const { address, isConnecting, isConnected } = useAccount();
   const { data: ensName } = useEnsName({ address });
   const { data: ensAvatar } = useEnsAvatar({ name: ensName });
@@ -61,6 +71,83 @@ export const ProfilePage: React.FC = () => {
     setBio(newBio);
     setEditModal({ isOpen: false, type: null });
   };
+
+  // Fetch badges from Supabase
+  React.useEffect(() => {
+    async function fetchBadges() {
+      if (!address) return;
+      setLoadingBadges(true);
+      setErrorBadges(null);
+      try {
+        const { data, error } = await supabase
+          .from('user_badges')
+          .select('*')
+          .eq('user_address', address);
+        if (error) throw error;
+        setBadges((data || []).map((b: any) => ({
+          id: b.id,
+          name: b.name,
+          icon: b.icon,
+          type: b.type,
+          level: b.level,
+          description: b.description,
+          unlockedAt: b.unlocked_at
+        })));
+      } catch (e: any) {
+        setErrorBadges(e.message || 'Failed to load badges');
+      } finally {
+        setLoadingBadges(false);
+      }
+    }
+    fetchBadges();
+  }, [address]);
+
+  // Fetch projects from Supabase
+  React.useEffect(() => {
+    async function fetchProjects() {
+      if (!address) return;
+      setLoadingProjects(true);
+      setErrorProjects(null);
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('owner_address', address);
+        if (error) throw error;
+        setProjects(data || []);
+      } catch (e: any) {
+        setErrorProjects(e.message || 'Failed to load projects');
+      } finally {
+        setLoadingProjects(false);
+      }
+    }
+    fetchProjects();
+  }, [address]);
+
+  // Fetch activity from Supabase (example: recent comments, upvotes, etc.)
+  React.useEffect(() => {
+    async function fetchActivity() {
+      if (!address) return;
+      setLoadingActivity(true);
+      setErrorActivity(null);
+      try {
+        // Example: fetch recent comments by user
+        const { data: comments, error: commentsError } = await supabase
+          .from('comments')
+          .select('*')
+          .eq('author_address', address)
+          .order('created_at', { ascending: false })
+          .limit(5);
+        if (commentsError) throw commentsError;
+        setActivity(comments || []);
+      } catch (e: any) {
+        setErrorActivity(e.message || 'Failed to load activity');
+      } finally {
+        setLoadingActivity(false);
+      }
+    }
+    fetchActivity();
+  }, [address]);
 
   // If wallet is not connected, show connect prompt
   if (!isConnected) {
@@ -99,28 +186,6 @@ export const ProfilePage: React.FC = () => {
     return num < 0.0001 ? '<0.0001' : num.toFixed(4);
   };
 
-  // Example badges data (replace with actual data from your API/state)
-  const badges: Badge[] = [
-    { 
-      id: '1', 
-      name: 'Early Builder',
-      icon: 'lucide:hammer',
-      type: 'builder',
-      level: 'gold',
-      description: 'One of the first builders on the platform',
-      unlockedAt: '2024-01-01'
-    },
-    {
-      id: '2',
-      name: 'Code Contributor',
-      icon: 'lucide:git-pull-request',
-      type: 'dev',
-      level: 'silver',
-      description: 'Contributed to multiple open source projects',
-      unlockedAt: '2024-02-01'
-    }
-  ];
-
   const getBadgeColor = (level: 'bronze' | 'silver' | 'gold' | 'diamond') => {
     switch (level) {
       case 'diamond': return {
@@ -148,6 +213,59 @@ export const ProfilePage: React.FC = () => {
         icon: "text-amber-600"
       };
     }
+  };
+
+  // Default stats fallback
+  const defaultStats = {
+    experience: '1,250',
+    contributions: '28',
+    projects: '4',
+    reputation: '#125',
+  };
+
+  // Compute stats from fetched data, fallback to defaults if error or loading
+  const computeExperience = () => {
+    if (loadingBadges) return null;
+    if (errorBadges) return null;
+    if (badges.length === 0) return 0;
+    const levelMap = { bronze: 1, silver: 2, gold: 3, diamond: 4 };
+    return badges.reduce((sum, b) => sum + (levelMap[b.level] || 0), 0) * 100;
+  };
+  const computeContributions = () => {
+    if (loadingActivity) return null;
+    if (errorActivity) return null;
+    if (!Array.isArray(activity) || activity.length === 0) return 0;
+    return activity.length;
+  };
+  const computeProjects = () => {
+    if (loadingProjects) return null;
+    if (errorProjects) return null;
+    if (!Array.isArray(projects) || projects.length === 0) return 0;
+    return projects.length;
+  };
+  const computeReputation = () => {
+    if (
+      loadingBadges || errorBadges ||
+      loadingProjects || errorProjects ||
+      loadingActivity || errorActivity
+    ) return null;
+    // Reputation: 1000 - (badges*10 + projects*5 + activity*2)
+    const badgeCount = badges.length;
+    const projectCount = projects.length;
+    const activityCount = activity.length;
+    return `#${Math.max(1, 1000 - (badgeCount * 10 + projectCount * 5 + activityCount * 2))}`;
+  };
+
+  const experience = computeExperience();
+  const contributions = computeContributions();
+  const projectsCount = computeProjects();
+  const reputation = computeReputation();
+
+  const stats = {
+    experience: experience !== null ? experience.toLocaleString() : defaultStats.experience,
+    contributions: contributions !== null ? contributions.toLocaleString() : defaultStats.contributions,
+    projects: projectsCount !== null ? projectsCount.toLocaleString() : defaultStats.projects,
+    reputation: reputation !== null ? reputation : defaultStats.reputation,
   };
 
   return (
@@ -182,7 +300,6 @@ export const ProfilePage: React.FC = () => {
               </Button>
             </div>
           </div>
-
           {/* Profile Info */}
           <div className="px-3 pb-4 sm:px-6 sm:pb-8">
             <div className="flex flex-col items-center sm:items-start sm:flex-row gap-4 sm:gap-6 relative">
@@ -203,7 +320,6 @@ export const ProfilePage: React.FC = () => {
                   <Icon icon="lucide:edit-3" width={14} />
                 </Button>
               </div>
-
               {/* Profile Details */}
               <div className="flex-1 space-y-4 text-center sm:text-left w-full">
                 <div className="space-y-1">
@@ -221,7 +337,6 @@ export const ProfilePage: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-                
                 <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2">
                   {/* Wallet Balance */}
                   <Chip
@@ -241,7 +356,6 @@ export const ProfilePage: React.FC = () => {
                       </div>
                     }
                   />
-
                   {/* Active Badges */}
                   {badges.slice(0, 3).map((badge) => (
                     <Chip
@@ -262,127 +376,23 @@ export const ProfilePage: React.FC = () => {
                     />
                   ))}
                 </div>
-
                 {/* Bio */}
                 <p className="text-sm text-default-500 max-w-2xl px-4 sm:px-0 leading-relaxed">
                   {bio}
                 </p>
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mt-6">
-                  <StatCard
-                    label="Experience"
-                    value="1,250"
-                    icon="lucide:star"
-                  />
-                  <StatCard
-                    label="Contributions"
-                    value="28"
-                    icon="lucide:git-merge"
-                  />
-                  <StatCard
-                    label="Projects"
-                    value="4"
-                    icon="lucide:folder"
-                  />
-                  <StatCard
-                    label="Reputation"
-                    value="#125"
-                    icon="lucide:award"
-                  />
-                </div>
               </div>
             </div>
           </div>
         </CardBody>
       </Card>
 
-      {/* Edit Modals */}
-      <Modal 
-        isOpen={editModal.isOpen}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) setEditModal({ isOpen: false, type: null });
-        }}
-        placement="center"
-        backdrop="blur"
-        classNames={{
-          base: "border border-default-200 bg-background/80 backdrop-blur-xl dark:bg-default-100/50",
-          header: "border-b border-default-200",
-          body: "p-0",
-          backdrop: "backdrop-blur-sm backdrop-saturate-150"
-        }}
-      >
-        <ModalContent>
-          <div className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold tracking-tight">
-                {editModal.type === 'avatar' ? 'Customize Avatar' : 'Edit Profile'}
-              </h3>
-              <Button
-                isIconOnly
-                variant="light"
-                size="sm"
-                onPress={() => setEditModal({ isOpen: false, type: null })}
-              >
-                <Icon icon="lucide:x" width={16} />
-              </Button>
-            </div>
-
-            {editModal.type === 'avatar' ? (
-              <div className="space-y-4">
-                <div className="flex justify-center">
-                  <Avatar
-                    src={generateAvatar(address || '', theme as 'light' | 'dark', avatarSettings)}
-                    className="w-32 h-32"
-                    alt="Preview"
-                  />
-                </div>
-                <div className="flex justify-center gap-2">
-                  <Button
-                    variant="flat"
-                    color="primary"
-                    onPress={handleAvatarCustomize}
-                    startContent={<Icon icon="lucide:refresh-cw" width={16} />}
-                  >
-                    Generate New
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <Textarea
-                  label="Bio"
-                  placeholder="Tell us about yourself..."
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="light"
-                onPress={() => setEditModal({ isOpen: false, type: null })}
-              >
-                Cancel
-              </Button>
-              <Button
-                color="primary"
-                onPress={() => {
-                  if (editModal.type === 'profile') {
-                    handleProfileEdit(bio);
-                  } else {
-                    setEditModal({ isOpen: false, type: null });
-                  }
-                }}
-              >
-                Save
-              </Button>
-            </div>
-          </div>
-        </ModalContent>
-      </Modal>
+      {/* Quick Stats (always show, fallback to defaults if error) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-8">
+        <StatCard label="Experience" value={stats.experience} icon="lucide:star" />
+        <StatCard label="Contributions" value={stats.contributions} icon="lucide:git-merge" />
+        <StatCard label="Projects" value={stats.projects} icon="lucide:folder" />
+        <StatCard label="Reputation" value={stats.reputation} icon="lucide:award" />
+      </div>
 
       {/* Tabs Navigation */}
       <Tabs 
@@ -392,128 +402,119 @@ export const ProfilePage: React.FC = () => {
         variant="underlined"
         size="lg"
       >
-        <Tab
-          key="overview"
-          title={
-            <div className="flex items-center gap-2">
-              <Icon icon="lucide:layout-dashboard" width={16} />
-              <span>Overview</span>
-            </div>
-          }
-        >
+        <Tab key="overview" title={<div className="flex items-center gap-2"><Icon icon="lucide:layout-dashboard" width={16} /><span>Overview</span></div>}>
           <div className="grid md:grid-cols-2 gap-6 py-4">
             {/* Active Projects */}
             <Card>
               <CardBody>
                 <h3 className="text-lg font-semibold mb-4">Active Projects</h3>
-                <div className="space-y-4">
-                  {[1, 2].map((_, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Icon icon="lucide:boxes" className="text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">Project Name</h4>
-                        <p className="text-sm text-default-400">Description of the project goes here</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Chip size="sm" variant="flat">Active</Chip>
-                          <span className="text-xs text-default-400">Updated 2h ago</span>
+                {loadingProjects ? (
+                  <div>Loading projects...</div>
+                ) : errorProjects ? (
+                  <div className="text-default-400">No projects found or failed to load.</div>
+                ) : projects.length === 0 ? (
+                  <div>No projects found.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {projects.map((project, i) => (
+                      <div key={project.id || i} className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Icon icon="lucide:boxes" className="text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium">{project.title || project.name}</h4>
+                          <p className="text-sm text-default-400">{project.description}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Chip size="sm" variant="flat">{project.status || 'Active'}</Chip>
+                            <span className="text-xs text-default-400">Updated {project.updated_at ? new Date(project.updated_at).toLocaleDateString() : ''}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardBody>
             </Card>
-
             {/* Recent Activity */}
             <Card>
               <CardBody>
                 <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-                <div className="space-y-4">
-                  {[1, 2, 3].map((_, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center">
-                        <Icon icon="lucide:git-commit" className="text-success" width={14} />
+                {loadingActivity ? (
+                  <div>Loading activity...</div>
+                ) : errorActivity ? (
+                  <div className="text-default-400">No recent activity or failed to load.</div>
+                ) : activity.length === 0 ? (
+                  <div>No recent activity.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {activity.map((item: any, i: number) => (
+                      <div key={item.id || i} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center">
+                          <Icon icon="lucide:git-commit" className="text-success" width={14} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm">
+                            <span className="font-medium">Commented</span>: {item.content}
+                          </p>
+                          <span className="text-xs text-default-400">{item.created_at ? new Date(item.created_at).toLocaleString() : ''}</span>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm">
-                          <span className="font-medium">Contributed</span> to Project Name
-                        </p>
-                        <span className="text-xs text-default-400">2 hours ago</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardBody>
             </Card>
           </div>
         </Tab>
-        <Tab
-          key="contributions"
-          title={
-            <div className="flex items-center gap-2">
-              <Icon icon="lucide:git-merge" width={16} />
-              <span>Contributions</span>
-            </div>
-          }
-        >
+        <Tab key="contributions" title={<div className="flex items-center gap-2"><Icon icon="lucide:git-merge" width={16} /><span>Contributions</span></div>}>
           {/* Contributions content */}
         </Tab>
-        <Tab
-          key="projects"
-          title={
-            <div className="flex items-center gap-2">
-              <Icon icon="lucide:folder" width={16} />
-              <span>Projects</span>
-            </div>
-          }
-        >
-          {/* Projects content */}
+        <Tab key="projects" title={<div className="flex items-center gap-2"><Icon icon="lucide:folder" width={16} /><span>Projects</span></div>}>
+          {/* Projects content (can reuse above or expand) */}
         </Tab>
-        <Tab
-          key="badges"
-          title={
-            <div className="flex items-center gap-2">
-              <Icon icon="lucide:medal" width={16} />
-              <span>Badges</span>
-            </div>
-          }
-        >
+        <Tab key="badges" title={<div className="flex items-center gap-2"><Icon icon="lucide:medal" width={16} /><span>Badges</span></div>}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
-            {badges.map((badge) => (
-              <Card key={badge.id} className="border border-divider">
-                <CardBody className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getBadgeColor(badge.level).base}`}>
-                      <Icon icon={badge.icon} className={getBadgeColor(badge.level).content} width={20} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">{badge.name}</h4>
-                        <Chip
-                          size="sm"
-                          variant="flat"
-                          classNames={{
-                            base: getBadgeColor(badge.level).base,
-                            content: getBadgeColor(badge.level).content
-                          }}
-                        >
-                          {badge.level}
-                        </Chip>
+            {loadingBadges ? (
+              <div>Loading badges...</div>
+            ) : errorBadges ? (
+              <div className="text-red-500">{errorBadges}</div>
+            ) : badges.length === 0 ? (
+              <div>No badges found.</div>
+            ) : (
+              badges.map((badge) => (
+                <Card key={badge.id} className="border border-divider">
+                  <CardBody className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getBadgeColor(badge.level).base}`}>
+                        <Icon icon={badge.icon} className={getBadgeColor(badge.level).content} width={20} />
                       </div>
-                      <p className="text-sm text-default-400 mt-1">{badge.description}</p>
-                      <div className="flex items-center gap-1 mt-2">
-                        <Icon icon="lucide:clock" className="text-default-400" width={12} />
-                        <span className="text-xs text-default-400">
-                          Unlocked {new Date(badge.unlockedAt).toLocaleDateString()}
-                        </span>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">{badge.name}</h4>
+                          <Chip
+                            size="sm"
+                            variant="flat"
+                            classNames={{
+                              base: getBadgeColor(badge.level).base,
+                              content: getBadgeColor(badge.level).content
+                            }}
+                          >
+                            {badge.level}
+                          </Chip>
+                        </div>
+                        <p className="text-sm text-default-400 mt-1">{badge.description}</p>
+                        <div className="flex items-center gap-1 mt-2">
+                          <Icon icon="lucide:clock" className="text-default-400" width={12} />
+                          <span className="text-xs text-default-400">
+                            Unlocked {badge.unlockedAt ? new Date(badge.unlockedAt).toLocaleDateString() : ''}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
+                  </CardBody>
+                </Card>
+              ))
+            )}
           </div>
         </Tab>
       </Tabs>

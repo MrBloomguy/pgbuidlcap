@@ -160,6 +160,12 @@ const pagesList = [
 		key: "submit",
 	},
 	{
+		path: "/retropgf",
+		icon: "lucide:sparkles",
+		label: "RetroPGF",
+		key: "retropgf",
+	},
+	{
 		path: "/leaderboard",
 		icon: "lucide:trophy",
 		label: "Rank",
@@ -258,7 +264,24 @@ export const Sidebar = ({
 		}
 	};
 
+	const pagesToNavigationMap = {
+		'RetroPGF': '/retropgf',
+		'Gitcoin Grants': '/gitcoin',
+		// Add more mappings as needed
+	};
+
 	const NetworksSection = () => {
+		const navigate = useNavigate();
+
+		const handleNetworkClick = (network: any) => {
+			if (pagesToNavigationMap[network.label]) {
+				navigate(pagesToNavigationMap[network.label]);
+				if (window.innerWidth < 768) {
+					onClose();
+				}
+			}
+		};
+
 		return (
 			<div className="space-y-4">
 				{isSearchOpen && (
@@ -279,7 +302,11 @@ export const Sidebar = ({
 							<Button
 								key={index}
 								variant="light"
-								className="w-full justify-start text-xs h-8 px-2 hover:bg-default-100 mb-[2px]"
+								className={`w-full justify-start text-xs h-8 px-2 hover:bg-default-100 mb-[2px] ${
+									pagesToNavigationMap[network.label] ? 'cursor-pointer' : ''
+								}`}
+								onClick={() => handleNetworkClick(network)}
+								disabled={!pagesToNavigationMap[network.label]}
 							>
 								<div className="flex items-center w-full gap-2">
 									<img
