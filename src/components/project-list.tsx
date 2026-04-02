@@ -602,6 +602,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                     </div>
                   </div>
           )}
+                </Card>
+              ))
+            )}
         </div>
 
         {upvoteModalToken && (
@@ -649,12 +652,12 @@ export const ProjectList: React.FC<ProjectListProps> = ({
               <TableRow>
                 <TableCell colSpan={10} className="text-center text-default-500">Loading projects...</TableCell>
               </TableRow>
-            ) : projects.length === 0 ? (
+            ) : projectsData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={10} className="text-center text-default-500">No projects found.</TableCell>
               </TableRow>
             ) : (
-              projects.map((project, index) => (
+              projectsData.map((project, index) => (
                 <TableRow key={project.id || index} className="token-row cursor-pointer">
                   <TableCell className="text-xs">{index + 1}</TableCell>
                   <TableCell>

@@ -55,7 +55,7 @@ export const LeaderboardPage: React.FC = (): JSX.Element => {
           .limit(10);
         if (error) throw error;
         // Map to Leader interface (mocked fields for missing data)
-        setLeaders((data || []).map((row: any, i: number) => ({
+        const mappedLeaders = (data || []).map((row: any, i: number): Leader => ({
           id: i + 1,
           address: row.user_address,
           avatar: `https://img.heroui.chat/image/avatar?w=64&h=64&u=${row.user_address}`,
@@ -72,7 +72,8 @@ export const LeaderboardPage: React.FC = (): JSX.Element => {
             proposalsCreated: 0,
             proposalsReviewed: 0
           }
-        )));
+        }));
+        setLeaders(mappedLeaders);
       } catch (e: any) {
         setErrorLeaders(e.message || 'Failed to load leaderboard');
       } finally {
